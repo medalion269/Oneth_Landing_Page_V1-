@@ -182,9 +182,15 @@ export const DECISION_STATE_LABEL: Record<DecisionState, string> = {
 };
 
 /** "Today" on the Overview: what oneth did and what waits for people. */
+/** What oneth is running right now (the app's Work in progress rows: task type · client, and its progress). */
+export const runningTasks = [
+  { type: "Reconcile bank", client: client.name, progress: 68 },
+  { type: "Process documents", client: "Marina Events FZ-LLC", progress: 40 },
+];
+
 export const overviewToday = {
   tasksDone: 9,
-  tasksRunning: 2,
+  tasksRunning: runningTasks.length,
   awaitingReview: 14,
   autoDecided: 0.38,
   overturnRate: 0.06,

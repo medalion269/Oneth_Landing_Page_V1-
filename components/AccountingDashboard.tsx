@@ -9,6 +9,7 @@ import {
   needsYou,
   overviewToday,
   readyForSignoff,
+  runningTasks,
   vatDeadlines,
   type DecisionKind,
 } from "@/lib/demo-data";
@@ -27,6 +28,10 @@ const KIND_ICON: Record<DecisionKind, LucideIcon> = {
 
 const pct = (r: number) => `${Math.round(r * 100)}%`;
 
+/**
+ * Today. On desktop the card shares a row with Needs you, which is taller, so instead of leaving that height empty it
+ * lists the tasks behind "Working on 2 now", as the app's Work in progress card shows them (type · client, progress).
+ */
 function Today({ compact = false }: { compact?: boolean }) {
   const t = overviewToday;
   return (
@@ -37,10 +42,30 @@ function Today({ compact = false }: { compact?: boolean }) {
           Working on {t.tasksRunning} now
         </Chip>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <StatTile label="Awaiting review" value={t.awaitingReview} />
-        <StatTile label="Auto-decided" value={pct(t.autoDecided)} />
-        <StatTile label="Overturn rate" value={pct(t.overturnRate)} />
+      {!compact && (
+        <ul className="flex flex-col gap-2">
+          {runningTasks.map((task) => (
+            <li key={task.type} className="flex items-center gap-3 rounded-app-tile bg-line-soft px-4 py-2.5">
+              <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <span className="truncate text-[13px] font-semibold leading-[18px]">
+                  {task.type} · {task.client}
+                </span>
+                <span className="block h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-paper">
+                  <span className="block h-full rounded-full bg-accent" style={{ width: `${task.progress}%` }} />
+                </span>
+              </span>
+              <Chip size="sm" tone="progress">
+                {task.progress}%
+              </Chip>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className={`grid grid-cols-3 gap-2 ${compact ? "" : "mt-auto"}`}>
+        {/* Labels can wrap on narrower screens; the numbers stay on one baseline */}
+        <StatTile label="Awaiting review" value={t.awaitingReview} className="justify-between" />
+        <StatTile label="Auto-decided" value={pct(t.autoDecided)} className="justify-between" />
+        <StatTile label="Overturn rate" value={pct(t.overturnRate)} className="justify-between" />
       </div>
     </AppCard>
   );
