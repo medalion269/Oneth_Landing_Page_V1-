@@ -1,24 +1,29 @@
 import { NextResponse } from "next/server";
-import { validateSubmission, type Submission, type SubmitResponse } from "@/lib/validation";
+import { FIRM_SIZES, validateSubmission, type Submission, type SubmitResponse } from "@/lib/validation";
 
 /**
  * POST /api/apply
  *
  * Receives pilot applications and waitlist signups.
- * Storage is chosen from environment variables (see .env.example):
+ * Delivery is chosen from environment variables (see .env.example); the first one configured wins:
  *   1. Supabase (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)
  *   2. Any JSON endpoint (SUBMISSION_ENDPOINT, optional SUBMISSION_ENDPOINT_TOKEN)
- *   3. Neither set: development mode. The request is validated, nothing is
+ *   3. An email per submission through Resend (RESEND_API_KEY + RESEND_TO, optional RESEND_FROM)
+ *   4. None set: development mode. The request is validated, nothing is
  *      stored, and the response says so explicitly (saved: false).
  */
+
+/** Resend's own test sender. It only delivers to the address the Resend account was created with. */
+const RESEND_TEST_FROM = "oneth <onboarding@resend.dev>";
 
 type Backend =
   | { kind: "supabase"; url: string; key: string; pilotTable: string; waitlistTable: string }
   | { kind: "endpoint"; url: string; token?: string }
+  | { kind: "resend"; key: string; to: string[]; from: string }
   | { kind: "none" };
 
 function resolveBackend(): Backend {
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUBMISSION_ENDPOINT } = process.env;
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUBMISSION_ENDPOINT, RESEND_API_KEY, RESEND_TO } = process.env;
   if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
     return {
       kind: "supabase",
@@ -31,7 +36,55 @@ function resolveBackend(): Backend {
   if (SUBMISSION_ENDPOINT) {
     return { kind: "endpoint", url: SUBMISSION_ENDPOINT, token: process.env.SUBMISSION_ENDPOINT_TOKEN || undefined };
   }
+  const to = (RESEND_TO || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (RESEND_API_KEY && to.length) {
+    return { kind: "resend", key: RESEND_API_KEY, to, from: process.env.RESEND_FROM?.trim() || RESEND_TEST_FROM };
+  }
   return { kind: "none" };
+}
+
+/** One line, so visitor input can't break the subject header. */
+const oneLine = (s: string) => s.replace(/[\r\n\t]+/g, " ").trim();
+
+/**
+ * Plain text only: nothing the visitor typed is ever rendered as HTML. Every value is kept to one line, so a
+ * visitor can't add lines that look like part of the email. Replies go to the visitor.
+ */
+function toEmail(raw: Submission) {
+  const data = Object.fromEntries(
+    Object.entries(raw).map(([k, v]) => [k, typeof v === "string" ? oneLine(v) : v]),
+  ) as Submission;
+  const when = new Date().toLocaleString("en-GB", { timeZone: "Asia/Dubai", dateStyle: "medium", timeStyle: "short" });
+  if (data.type === "pilot") {
+    const size = FIRM_SIZES.find((s) => s.value === data.firmSize)?.label ?? data.firmSize;
+    return {
+      subject: `Pilot application: ${data.firmName} (${data.fullName})`,
+      text: [
+        "New pilot application from oneth.ai",
+        "",
+        `Name:      ${data.fullName}`,
+        `Email:     ${data.email}`,
+        `Firm:      ${data.firmName}`,
+        `Firm size: ${size}`,
+        `Phone:     ${data.phone}`,
+        `Submitted: ${when} (UAE time)`,
+        "",
+        "Reply to this email to answer them directly.",
+      ].join("\n"),
+    };
+  }
+  return {
+    subject: `Waitlist signup: ${data.email}${data.firmName ? ` (${data.firmName})` : ""}`,
+    text: [
+      "New waitlist signup from oneth.ai",
+      "",
+      `Email:     ${data.email}`,
+      `Firm:      ${data.firmName || "(not given)"}`,
+      `Submitted: ${when} (UAE time)`,
+      "",
+      "Reply to this email to answer them directly.",
+    ].join("\n"),
+  };
 }
 
 function toRow(data: Submission) {
@@ -64,6 +117,14 @@ async function store(backend: Exclude<Backend, { kind: "none" }>, data: Submissi
           Prefer: "return=minimal",
         },
         body: JSON.stringify(toRow(data)),
+        signal: controller.signal,
+      });
+    } else if (backend.kind === "resend") {
+      const { subject, text } = toEmail(data);
+      res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${backend.key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: backend.from, to: backend.to, subject, text, reply_to: data.email }),
         signal: controller.signal,
       });
     } else {

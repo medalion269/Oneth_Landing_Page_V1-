@@ -45,11 +45,12 @@ Requires Node 20 or newer (built and tested on Node 24).
 
 ## Form submissions
 
-`POST /api/apply` handles both the pilot application and the waitlist. It validates input on the server (`lib/validation.ts`, shared with the browser) and then stores it in the first backend it finds configured:
+`POST /api/apply` handles both the pilot application and the waitlist. It validates input on the server (`lib/validation.ts`, shared with the browser) and then delivers it to the first backend it finds configured:
 
 1. **Supabase**: set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Inserts go through the REST API from the server only.
 2. **Any JSON endpoint**: set `SUBMISSION_ENDPOINT` (and optionally `SUBMISSION_ENDPOINT_TOKEN`, sent as a bearer token).
-3. **Nothing set: development mode.** The form still validates and responds, but nothing is stored. The success screen shows a yellow **Development mode: not saved** notice, so no one mistakes it for a real signup.
+3. **An email through Resend**: set `RESEND_API_KEY` (a "Sending access" key) and `RESEND_TO`. Each submission arrives as a plain-text email; replying answers the visitor. Until a domain is verified in Resend, `RESEND_TO` must be the address the Resend account was created with, and the sender is Resend's `onboarding@resend.dev`. After verifying `oneth.ai` in Resend, set `RESEND_FROM` (for example `oneth <pilot@oneth.ai>`). The free plan sends 100 emails a day.
+4. **Nothing set: development mode.** The form still validates and responds, but nothing is stored. The success screen shows a yellow **Development mode: not saved** notice, so no one mistakes it for a real signup.
 
 Copy `.env.example` to `.env.local` and fill in one option.
 

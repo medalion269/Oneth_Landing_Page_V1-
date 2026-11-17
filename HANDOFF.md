@@ -46,8 +46,8 @@ You are picking up an existing project: the pre-launch landing page for **oneth 
 - The hero's load-in is pure CSS (`.word-mask`, `.anim-rise`, `.hero-dash-enter`). The dashboard's starting tilt lives in CSS (`.hero-dash`), and GSAP takes over from the same values.
 - **Hero, "do the work yourself"** (desktop): once the app lies flat it holds for about a screen of scrolling (pin 240%). The first time a visitor scrolls down onto it, an invite card offers "Clear Saffron Grove's to-do list" (Start / No thanks). On Start the guide (`hero-app/Guide.tsx`) holds the page and points at one click at a time: the lit target pulses, everything else is dimmed and can't be clicked (four blockers around the spotlight plus a capture-phase click guard), and a short card says what is happening. The visitor does the work; oneth's part (reading the invoice, proposing the next one, the client answering, reading the photo) happens in response (`hero-app/useStory.ts`). Skip, Escape, a resize, 30 s without input or the scroll scene going away stop it; the pill beside the title then says "Continue the tasks" (or "Try it · 3 tasks", "Start over"). It never invites from a restored scroll position, a link jump past the hero (`isNavigating`) or on the way back up. With reduced motion: no invite, no hold, the pill runs it, the client's answer arrives at once. `heroAnimation` keeps the app `inert` until it is flat, hides the landing's top bar while it fills the pinned screen, and sends `HERO_EVENTS` (live, arrive, cancel). Phones and tablets keep the compact two-card picture (starting counts).
 - The form posts to `app/api/apply/route.ts`, with validation shared through `lib/validation.ts`.
-  - Storage: Supabase if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, otherwise `SUBMISSION_ENDPOINT`.
-  - With neither set it runs in **development mode**: nothing is saved and the page says so. See `.env.example` and the SQL in `README.md`.
+  - Delivery, first one configured wins: Supabase if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, otherwise `SUBMISSION_ENDPOINT`, otherwise an email per submission through Resend (`RESEND_API_KEY` + `RESEND_TO`, optional `RESEND_FROM`; plain text, replies go to the visitor).
+  - With none set it runs in **development mode**: nothing is saved and the page says so. See `.env.example` and the SQL in `README.md`.
 
 ## Phones and tablets (<1024px)
 - **Navigation:** no top menu. The header is just the logo. `components/MobileTabBar.tsx` is an app-style glass bottom bar (Home, How it works, Features, Waitlist) with a round blue Apply button. The active tab is measured from section positions on scroll. The bar hides while a form field is focused.
@@ -85,7 +85,7 @@ The user asked for the page to show how the product really works, keeping the fl
 - Redesigned on 2026-11-17 so the scenes are the app (see above) and checked at 390, 768, 1366 x 650 and 1440, with reduced motion too. The phone stamp is now the app's chip, which fixed the page being 393px wide during Prepare.
 - Known, not yet fixed: the pilot section's glow starts with a hard top edge (`PilotForm.tsx`, gradient centred at 0%), right under the Outlook line.
 - Dev server: something else on this machine uses port 3000, so run `npx next dev -p 3100`. `next dev` also writes `AGENTS.md`, which `.gitignore` ignores.
-- No backend is connected yet, so submissions are not saved until `.env.local` is filled in.
-- Not deployed anywhere. There's no Open Graph image or analytics yet.
+- Live at https://oneth.ai (Vercel, from the `medalion269/Oneth_Landing_Page_V1-` repo; see L7 in `docs/DECISIONS.md`). Form delivery is the Resend email (L9), switched on by its variables in the Vercel project; without them the live form runs in development mode.
+- There's no Open Graph image or analytics yet.
 
 Start by running the project, opening it at 390 and 1440 widths, and telling me what you see. Then wait for my next instruction.
