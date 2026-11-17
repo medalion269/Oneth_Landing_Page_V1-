@@ -259,35 +259,43 @@ export const evidence = [
 export const explanation = `The items on this bill are office consumables, and your team coded the last ${precedentBills} bills from ${invoice.supplierShort} to Office supplies. The invoice is a tax invoice with a supplier TRN and 5% VAT, so the VAT is suggested as recoverable input tax.`;
 
 /* ------------------------------------------------------------------ */
-/* Approval limits (illustration of autonomy earned over time)          */
+/* Settings → Permissions (autonomy earned over the months)             */
 /* ------------------------------------------------------------------ */
 
-export type LimitHolder = "oneth" | "team" | "partner";
 export type LimitStage = 1 | 2 | 3;
+export type PermissionMode = "off" | "propose" | "auto_under_threshold" | "auto";
 
-/** Amount bands, in AED, that a firm might use for approval limits. */
-export const limitBands = [
-  { short: "Under 1,000", long: "Under AED 1,000" },
-  { short: "1,000 to 10,000", long: "AED 1,000 to 10,000" },
-  { short: "Over 10,000", long: "Over AED 10,000" },
-];
+export const PERMISSION_MODE_LABEL: Record<PermissionMode, string> = {
+  off: "Off",
+  propose: "Propose",
+  auto_under_threshold: "Auto under a threshold",
+  auto: "Auto",
+};
 
 export const limitStages: { id: LimitStage; label: string; caption: string }[] = [
-  { id: 1, label: "Pilot month", caption: "Your team approves every entry and compares the work with its own." },
-  { id: 2, label: "Month 2", caption: "Partners let it match exact bank lines and code small routine costs alone." },
-  { id: 3, label: "Month 3", caption: "More routine work moves across. New, unusual and large items stay with your team." },
+  { id: 1, label: "Pilot month", caption: "oneth proposes everything and your team approves it, alongside its own work." },
+  { id: 2, label: "Month 2", caption: "Partners let it match bank lines and classify routine costs up to AED 2,000." },
+  { id: 3, label: "Month 3", caption: "Standard VAT under AED 1,000 too. Requests, posting and tax returns stay with people." },
 ];
 
 /**
- * Example limits for a fictional firm, shown in their Month 3 state.
- * `from` is the stage at which a partner handed that cell to the platform;
- * before then it sat with the team. Cells without `from` never change.
+ * The app's permission matrix (frontend/src/lib/control.ts labels) for a fictional firm, in its Month 3 state.
+ * `from` is the stage at which a partner changed the row from Propose; rows without it never change.
+ * Requests and posting are propose-only and tax returns are locked off, as in the app.
  */
-export const approvalLimits: { work: string; cells: { holder: LimitHolder; from?: LimitStage }[] }[] = [
-  { work: "Code routine expenses", cells: [{ holder: "oneth", from: 2 }, { holder: "oneth", from: 3 }, { holder: "team" }] },
-  { work: "Match exact bank lines", cells: [{ holder: "oneth", from: 2 }, { holder: "oneth", from: 2 }, { holder: "team" }] },
-  // A person always sends requests to clients; oneth only drafts them (product decision R7), so this row never moves.
-  { work: "Request a missing receipt", cells: [{ holder: "team" }, { holder: "team" }, { holder: "team" }] },
-  { work: "Standard rated VAT", cells: [{ holder: "oneth", from: 3 }, { holder: "team" }, { holder: "partner" }] },
-  { work: "New supplier or unusual item", cells: [{ holder: "team" }, { holder: "team" }, { holder: "partner" }] },
+export const permissions: {
+  action: string;
+  label: string;
+  detail: string;
+  mode: PermissionMode;
+  threshold?: string;
+  from?: LimitStage;
+  locked?: boolean;
+}[] = [
+  { action: "classify_routine_expenses", label: "Classify routine expenses", detail: "Choose the account for a supplier invoice or receipt.", mode: "auto_under_threshold", threshold: "2,000.00", from: 2 },
+  { action: "auto_match_bank", label: "Match bank lines", detail: "Match a bank line to the invoice, bill or booking it pays.", mode: "auto", from: 2 },
+  { action: "apply_standard_vat", label: "Apply standard VAT", detail: "Use 5% VAT where the document supports it.", mode: "auto_under_threshold", threshold: "1,000.00", from: 3 },
+  { action: "send_routine_requests", label: "Send routine requests", detail: "oneth proposes asking a client for a receipt or an answer; a person sends it.", mode: "propose" },
+  { action: "post_entries", label: "Post entries", detail: "oneth never writes to an accounting system: off or propose only.", mode: "propose" },
+  { action: "submit_tax_return", label: "Submit tax returns", detail: "Tax filing is never automated.", mode: "off", locked: true },
 ];
