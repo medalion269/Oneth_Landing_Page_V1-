@@ -7,7 +7,7 @@ import SectionHeading from "./SectionHeading";
 import Stage from "./Stage";
 import { AppCard, AppRail, AppTopBar, Chip, ICON, ListRow, PillButton } from "./app/ui";
 import { portalAnimation, useGSAP } from "@/lib/animations";
-import { aed, client, firm, formatTrn, otherRequests, portalQuestion, splitGross } from "@/lib/demo-data";
+import { aed, client, firm, formatTrn, openRequest, portalQuestion, splitGross } from "@/lib/demo-data";
 
 /*
  * Client portal, "answer and snap". Left: the client's phone, on the portal the firm sends them to
@@ -201,7 +201,10 @@ function Phone() {
 
 const WORKSPACE_TABS = ["Overview", "Documents", "Transactions", "Bank reconciliation", "VAT", "Periods", "Decisions", "Missing documents", "Communications", "Audit trail"];
 
-/** Requests and questions, with their status (the app's requestStatus: Waiting, Answered). */
+/**
+ * Requests and questions, with their status (the app's requestStatus: Waiting, Answered). Like the app, a request's icon
+ * is a file once a document came with it, a speech bubble otherwise: the question's turns into a file with the photo.
+ */
 function RequestsCard() {
   return (
     <AppCard title="Requests and questions" className="h-full overflow-hidden">
@@ -209,7 +212,16 @@ function RequestsCard() {
         <ListRow
           stacked
           wrap
-          icon={MessageCircle}
+          iconNode={
+            <span className="stack">
+              <span data-pt-req-before aria-hidden style={{ opacity: 0 }}>
+                <MessageCircle {...ICON} />
+              </span>
+              <span data-pt-req-after>
+                <FileQuestion {...ICON} />
+              </span>
+            </span>
+          }
           title={q.title}
           subtitle="Asked 1 day ago"
           right={
@@ -227,20 +239,17 @@ function RequestsCard() {
             </span>
           }
         />
-        {otherRequests.slice(0, 1).map((r) => (
-          <ListRow
-            key={r.title}
-            stacked
-            icon={FileQuestion}
-            title={r.title}
-            subtitle={`Asked ${r.asked}`}
-            right={
-              <Chip size="sm" tone={r.status === "Answered" ? "done" : "review"}>
-                {r.status}
-              </Chip>
-            }
-          />
-        ))}
+        <ListRow
+          stacked
+          icon={MessageCircle}
+          title={openRequest.title}
+          subtitle={`Asked ${openRequest.asked}`}
+          right={
+            <Chip size="sm" tone="review">
+              Waiting
+            </Chip>
+          }
+        />
       </div>
     </AppCard>
   );

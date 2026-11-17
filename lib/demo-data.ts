@@ -357,14 +357,8 @@ export const portalQuestion = {
   reproposedAt: "14 Nov 2026, 18:23",
 };
 
-/** Other requests in the client's Communications tab (the app's requestStatus labels). */
-export const otherRequests = [
-  { title: "November bank statement", asked: "3 Nov 2026", status: "Waiting" as const },
-  { title: "Tenancy contract, Marina branch", asked: "28 Oct 2026", status: "Answered" as const },
-];
-
-/** This month's progress on the portal's Home tab: the share of close checklist items that are done. */
-export const portalProgress = 40;
+/** Another open request in the client's Communications tab: nothing uploaded yet, so it is still Waiting. */
+export const openRequest = { title: "November bank statement", asked: "3 Nov 2026" };
 
 /* ------------------------------------------------------------------ */
 /* Period close: Saffron Grove's October, from in progress to signed off */

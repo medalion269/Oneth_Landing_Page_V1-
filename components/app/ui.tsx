@@ -235,10 +235,13 @@ export function ListRow({
   selected = false,
   stacked = false,
   wrap = false,
+  iconNode,
   className = "",
   ...rest
 }: {
   icon?: LucideIcon;
+  /** Instead of `icon`: any 18px icon content (e.g. two icons that cross-fade), in the same 36px circle. */
+  iconNode?: ReactNode;
   iconTone?: keyof typeof CIRCLE_TONE;
   title: ReactNode;
   subtitle?: ReactNode;
@@ -263,7 +266,11 @@ export function ListRow({
         className,
       )}
     >
-      {icon && <IconCircle icon={icon} tone={iconTone} />}
+      {iconNode ? (
+        <span className={cx("inline-flex size-9 shrink-0 items-center justify-center rounded-full", CIRCLE_TONE[iconTone])}>{iconNode}</span>
+      ) : (
+        icon && <IconCircle icon={icon} tone={iconTone} />
+      )}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className={cx("text-[14px] font-semibold leading-[20px] text-ink", wrap ? "" : stacked ? "line-clamp-2" : "truncate")}>{title}</span>
         {subtitle !== undefined && <span className="truncate text-[13px] leading-[18px] text-muted">{subtitle}</span>}

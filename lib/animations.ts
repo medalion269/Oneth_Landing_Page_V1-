@@ -905,8 +905,8 @@ export function portalAnimation(root: HTMLElement) {
     );
 
     // The firm sees it: the question is Answered, the reply arrives, then oneth's proposal from the receipt
-    tl.fromTo($(stage, "[data-pt-req-before]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, 4.7).fromTo(
-      $(stage, "[data-pt-req-after]"),
+    tl.fromTo($$(stage, "[data-pt-req-before]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, 4.7).fromTo(
+      $$(stage, "[data-pt-req-after]"),
       { opacity: 0, scale: 0.85 },
       { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" },
       4.8,
@@ -925,7 +925,7 @@ export function portalAnimation(root: HTMLElement) {
     const inner = scene ? $(scene, "[data-pt-form-inner]") : null;
     const talk = scene ? $(scene, "[data-pt-conversation]") : null;
     if (!scene || !card || !form || !inner || !talk) return;
-    gsap.set(form, { height: () => inner.offsetHeight, opacity: 1 });
+    gsap.set(form, { height: "auto", opacity: 1 });
     gsap.set($(scene, "[data-pt-answered]"), { opacity: 0 });
     const answer = gsap.timeline({
       defaults: { ease: "none" },
@@ -1048,7 +1048,7 @@ export function closeAnimation(root: HTMLElement) {
     const inner = scene ? $(scene, "[data-close-pending-inner]") : null;
     if (!scene || !list || !card || !pending || !inner) return;
     // Phones keep the waiting view's room while the scene plays, so the page below never moves
-    gsap.set(pending, { height: () => inner.offsetHeight });
+    gsap.set(pending, { height: "auto" });
     const rows = gsap.timeline({
       defaults: { ease: "none" },
       scrollTrigger: { trigger: list, start: "top 65%", end: "bottom 55%", scrub: 0.6, invalidateOnRefresh: true },
