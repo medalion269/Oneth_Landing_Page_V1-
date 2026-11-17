@@ -557,6 +557,35 @@ export function reconciliationAnimation(root: HTMLElement) {
 /* 4. Accountant approval                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Write the app's decision record in, section by section: its label, then the text uncovered left to right. The record
+ * is longer than its card, so the body scrolls (it sits bottom-aligned when finished) to keep the section being written
+ * in view. Sections with data-ap-hl light up those fields on the document. Returns the time after the last section.
+ */
+function writeRecord(tl: gsap.core.Timeline, stage: HTMLElement, start: number, gap: number) {
+  const win = $(stage, "[data-ap-record-window]");
+  const body = $(stage, "[data-ap-record-body]");
+  const sections = $$(stage, "[data-ap-section]");
+  if (!win || !body || !sections.length) return start;
+  const overflow = () => Math.max(0, body.offsetHeight - win.clientHeight);
+  // The body's y that shows section i whole (y = overflow shows the top; y = 0 is the finished, bottom-aligned record)
+  const yFor = (i: number) => () => {
+    const b = offsetWithin(sections[i], body);
+    return Math.max(0, overflow() - Math.max(0, b.y + b.h - win.clientHeight));
+  };
+  tl.fromTo(body, { y: overflow }, { y: yFor(0), duration: 0.01 }, start - 0.02);
+  sections.forEach((section, i) => {
+    const t = start + i * gap;
+    tl.to(body, { y: yFor(i), duration: gap * 0.6, ease: "power2.inOut" }, t)
+      .fromTo($(section, "[data-ap-section-label]"), { opacity: 0 }, { opacity: 1, duration: 0.2 }, t)
+      .fromTo($(section, "[data-ap-cover]"), { scaleX: 1 }, { scaleX: 0, duration: gap * 0.8, ease: "power1.inOut" }, t + 0.05);
+    const fields = (section.dataset.apHl || "").split(" ").filter(Boolean);
+    const boxes = fields.map((f) => $(stage, `[data-ap-doc] [data-hl="${f}"]`)).filter(Boolean);
+    if (boxes.length) tl.fromTo(boxes, { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.4 }, t + 0.1);
+  });
+  return start + sections.length * gap;
+}
+
 export function approvalAnimation(root: HTMLElement) {
   const mm = gsap.matchMedia();
 
@@ -578,48 +607,37 @@ export function approvalAnimation(root: HTMLElement) {
       return { x: b.x + b.w * 0.55, y: b.y + b.h * 0.55 };
     };
 
-    const tl = pinnedTimeline(root, "280%");
+    const tl = pinnedTimeline(root, "300%");
 
-    // The source document moves beside the suggested entry
+    // The source document moves beside its decision record; the actions follow
     tl.fromTo(docEl, { x: docCenterShift, scale: 1.05 }, { x: 0, scale: 1, duration: 1.3, ease: "power3.inOut" }, 0.1)
       .fromTo($(stage, "[data-ap-panel]"), { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 1, ease: "power3.out" }, 0.7)
-      // The suggested decision
-      .fromTo($$(stage, "[data-ap-decision-row]"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.18 }, 1.6)
-      .fromTo($(stage, "[data-ap-ring]"), { opacity: 0, scale: 0.985 }, { opacity: 1, scale: 1, duration: 0.5 }, 2.3);
+      .fromTo($(stage, "[data-ap-actions]"), { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.9, ease: "power3.out" }, 1.0);
 
-    // Evidence appears, each piece lighting up the part of the document it relies on
-    const evidenceHl: Record<string, string[]> = { lines: ["lines"], history: [], tax: ["trn", "vat"], bank: ["total"] };
-    $$(stage, "[data-ap-evidence]").forEach((card, i) => {
-      const t = 2.9 + i * 0.45;
-      tl.fromTo(card, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, t);
-      const boxes = (evidenceHl[card.dataset.apEvidence || ""] || [])
-        .map((f) => $(stage, `[data-ap-doc] [data-hl="${f}"]`))
-        .filter(Boolean);
-      if (boxes.length) tl.fromTo(boxes, { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.4 }, t + 0.1);
-    });
+    // The decision record writes itself in, section by section, lighting up the document where it relies on it
+    const t0 = writeRecord(tl, stage, 1.7, 0.6) + 0.3;
 
-    tl.fromTo($(stage, "[data-ap-expl]"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5 }, 4.9)
-      // The accountant approves
-      .fromTo(
-        cursor,
-        { opacity: 0, x: () => W - 120, y: () => stage.offsetHeight - 20 },
-        { opacity: 1, x: () => btn().x, y: () => btn().y, duration: 1.3, ease: "power2.inOut" },
-        5.6,
-      )
-      .fromTo($(stage, "[data-ap-approve-hover]"), { opacity: 0 }, { opacity: 1, duration: 0.15 }, 6.75)
-      .to(cursor, { scale: 0.82, duration: 0.12, transformOrigin: "10% 10%" }, 7.0)
-      .to(approve, { scale: 0.96, duration: 0.12 }, 7.0)
-      .to(cursor, { scale: 1, duration: 0.15 }, 7.12)
-      .to(approve, { scale: 1, duration: 0.15 }, 7.12)
-      .fromTo($(stage, "[data-ap-approve-label]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, 7.2)
-      .fromTo($(stage, "[data-ap-approved-label]"), { opacity: 0 }, { opacity: 1, duration: 0.25 }, 7.3)
-      .fromTo($(stage, "[data-ap-status-ready]"), { opacity: 1, y: 0 }, { opacity: 0, y: -6, duration: 0.25 }, 7.3)
-      .fromTo($(stage, "[data-ap-status-approved]"), { opacity: 0, y: 6, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "back.out(2)" }, 7.4)
-      .fromTo($(stage, "[data-ap-audit-pending]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, 7.4)
-      .fromTo($(stage, "[data-ap-audit-done]"), { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.5)
-      .fromTo($(stage, "[data-ap-toast]"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 7.9)
-      .to(cursor, { opacity: 0, x: "+=40", y: "+=30", duration: 0.5 }, 8.5)
-      .to({}, { duration: 1 }, 9);
+    // A person approves (and saves it as a precedent)
+    tl.fromTo(
+      cursor,
+      { opacity: 0, x: () => W - 120, y: () => stage.offsetHeight - 20 },
+      { opacity: 1, x: () => btn().x, y: () => btn().y, duration: 1.3, ease: "power2.inOut" },
+      t0,
+    )
+      .fromTo($(stage, "[data-ap-approve-hover]"), { opacity: 0 }, { opacity: 1, duration: 0.15 }, t0 + 1.15)
+      .to(cursor, { scale: 0.82, duration: 0.12, transformOrigin: "10% 10%" }, t0 + 1.4)
+      .to(approve, { scale: 0.96, duration: 0.12 }, t0 + 1.4)
+      .to(cursor, { scale: 1, duration: 0.15 }, t0 + 1.52)
+      .to(approve, { scale: 1, duration: 0.15 }, t0 + 1.52)
+      .fromTo($(stage, "[data-ap-approve-label]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, t0 + 1.6)
+      .fromTo($(stage, "[data-ap-approved-label]"), { opacity: 0 }, { opacity: 1, duration: 0.25 }, t0 + 1.7)
+      .fromTo($(stage, "[data-ap-status-ready]"), { opacity: 1, y: 0 }, { opacity: 0, y: -6, duration: 0.25 }, t0 + 1.7)
+      .fromTo($(stage, "[data-ap-status-approved]"), { opacity: 0, y: 6, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "back.out(2)" }, t0 + 1.8)
+      .fromTo($(stage, "[data-ap-audit-pending]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, t0 + 1.8)
+      .fromTo($(stage, "[data-ap-audit-done]"), { opacity: 0 }, { opacity: 1, duration: 0.3 }, t0 + 1.9)
+      .fromTo($(stage, "[data-ap-toast]"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, t0 + 2.3)
+      .to(cursor, { opacity: 0, x: "+=40", y: "+=30", duration: 0.5 }, t0 + 2.9)
+      .to({}, { duration: 1 }, t0 + 3.4);
   });
 
   mm.add(MEDIA.mobile, () => {
@@ -628,82 +646,6 @@ export function approvalAnimation(root: HTMLElement) {
     if (!scene) return;
     // The tabs themselves (and the tap-to-approve moment) live in ApprovalWorkflow's MobileScene.
     revealItems(scene);
-  });
-
-  return mm;
-}
-
-/* ------------------------------------------------------------------ */
-/* 4b. How it decides: the working paper writes itself in               */
-/* ------------------------------------------------------------------ */
-
-/**
- * Write the paper line by line: label, then the text uncovered left to right,
- * then its tick mark lands like a pen mark. With `legend`, each key entry lights
- * up the first time its tick is used. Returns the time after the last line.
- */
-function writePaper(tl: gsap.core.Timeline, scope: HTMLElement, start: number, gap: number, legend?: HTMLElement | null) {
-  const seen = new Set<string>();
-  const rows = $$(scope, "[data-paper-row]");
-  rows.forEach((row, i) => {
-    const t = start + i * gap;
-    tl.fromTo($(row, "[data-paper-label]"), { opacity: 0 }, { opacity: 1, duration: 0.2 }, t).fromTo(
-      $(row, "[data-paper-cover]"),
-      { scaleX: 1 },
-      { scaleX: 0, duration: gap * 0.8, ease: "power1.inOut" },
-      t + 0.05,
-    );
-    const tick = $(row, "[data-tick]");
-    if (!tick) return;
-    // Lands on the resting tilt set inline in DecisionPaper.tsx (TICK_TILT, -6deg)
-    tl.fromTo(tick, { opacity: 0, scale: 1.7, rotation: -30 }, { opacity: 1, scale: 1, rotation: -6, duration: 0.3, ease: "back.out(2)" }, t + gap * 0.75);
-    const kind = tick.dataset.tick || "";
-    const item = legend ? $(legend, `[data-legend-item="${kind}"]`) : null;
-    if (!item || seen.has(kind)) return;
-    seen.add(kind);
-    const flash = $(item, "[data-legend-flash]");
-    tl.fromTo(item, { opacity: 0.35 }, { opacity: 1, duration: 0.25 }, t + gap * 0.8)
-      .fromTo(flash, { opacity: 0 }, { opacity: 1, duration: 0.15 }, t + gap * 0.8)
-      .to(flash, { opacity: 0, duration: 0.4 }, t + gap * 0.8 + 0.3);
-  });
-  return start + rows.length * gap;
-}
-
-export function decisionAnimation(root: HTMLElement) {
-  const mm = gsap.matchMedia();
-
-  mm.add(MEDIA.desktop, () => {
-    revealHeading(root);
-    const stage = $(root, "[data-desktop] [data-stage]");
-    if (!stage) return;
-    const tl = pinnedTimeline(root, "200%");
-    tl.fromTo($(stage, "[data-paper]"), { opacity: 0, y: 48 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0).fromTo(
-      $(stage, "[data-legend]"),
-      { opacity: 0, x: 40 },
-      { opacity: 1, x: 0, duration: 0.8, ease: "power3.out" },
-      0.25,
-    );
-    const end = writePaper(tl, stage, 0.9, 0.55, $<HTMLElement>(stage, "[data-legend]"));
-    tl.fromTo($(stage, "[data-paper-signoff]"), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, end + 0.1).to(
-      {},
-      { duration: 1 },
-      end + 0.6,
-    );
-  });
-
-  // Phones and tablets: no pin. The paper writes itself in while it scrolls through the screen.
-  mm.add(MEDIA.mobile, () => {
-    revealHeading(root);
-    const scene = $(root, "[data-mobile]");
-    const paper = scene ? $(scene, "[data-paper]") : null;
-    if (!scene || !paper) return;
-    revealItems(scene);
-    const tl = gsap.timeline({
-      defaults: { ease: "none" },
-      scrollTrigger: { trigger: paper, start: "top 80%", end: "bottom 60%", scrub: 0.6 },
-    });
-    const end = writePaper(tl, paper, 0, 0.6);
-    tl.fromTo($(paper, "[data-paper-signoff]"), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5 }, end);
   });
 
   return mm;

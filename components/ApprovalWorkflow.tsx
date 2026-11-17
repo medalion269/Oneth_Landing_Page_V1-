@@ -1,82 +1,230 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, Check, CircleCheck, MessageSquare, RotateCcw } from "lucide-react";
 import Brand from "./Brand";
 import SectionHeading from "./SectionHeading";
 import Stage from "./Stage";
 import { InvoiceDoc } from "./Documents";
-import { CursorPointer, IconBank, IconCheck, IconDoc, IconFlag, IconPercent, IconUsers } from "./icons";
+import { CursorPointer } from "./icons";
+import { AppCard, AppRail, AppTopBar, Chip, ConfidenceBar, ICON, ICON_SM, PillButton } from "./app/ui";
 import { approvalAnimation, useGSAP } from "@/lib/animations";
-import { aed, client, evidence, explanation, firm, invoice, preparedEntry } from "@/lib/demo-data";
+import { aed, client, evidence, explanation, firm, formatTrn, invoice, precedentBills, preparedEntry } from "@/lib/demo-data";
 
-const evidenceIcon = { lines: IconDoc, history: IconUsers, tax: IconPercent, bank: IconBank } as const;
+/*
+ * Review: the oneth app's Decision screen (frontend/src/app/decisions/detail: DocumentCard, RecordCard, ActionsCard,
+ * HistoryCard). The decision record writes itself in, section by section, in the order a reviewer reads it; then a
+ * person approves. oneth runs in shadow mode: it proposes, people decide, and nothing is written to the books.
+ */
 
-function StatusBadges() {
+const [costLine, vatLine, payableLine] = preparedEntry.lines;
+const ISSUE = `Classify ${invoice.supplierShort} invoice ${invoice.number}`;
+const RULE = "Input VAT on a valid tax invoice · v3";
+const POLICY = "Office consumables go to 6120";
+const NOT_WRITTEN = "oneth only proposes. Nothing is written to your books.";
+
+/** Label and value rows, as the app's FieldList. */
+function Fields({ rows }: { rows: [string, ReactNode][] }) {
   return (
-    <span className="stack">
-      <span data-ap-status-ready className="pill pill-accent justify-self-end text-[11.5px]!" style={{ opacity: 0 }}>
-        Ready for review
-      </span>
-      <span data-ap-status-approved className="pill pill-ok justify-self-end text-[11.5px]!">
-        <IconCheck size={12} strokeWidth={2.4} /> Approved
-      </span>
-    </span>
+    <dl className="flex flex-col">
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex items-baseline justify-between gap-4 border-b border-line-soft py-1 last:border-0">
+          <dt className="shrink-0 text-[13px] text-muted">{label}</dt>
+          <dd className="min-w-0 truncate text-right text-[13px] text-ink tabular-nums">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
-function Decision({ compact = false }: { compact?: boolean }) {
+/** One section of the record. The cover uncovers it left to right when the timeline writes it in. */
+function Section({ label, hl, children }: { label: string; hl?: string; children: ReactNode }) {
   return (
-    <div className={`relative rounded-xl border border-line bg-canvas/50 ${compact ? "p-3.5" : "p-4"}`}>
-      <span data-ap-ring aria-hidden className="pointer-events-none absolute -inset-px rounded-xl ring-[1.5px] ring-accent/70" />
-      <div className={`grid gap-4 ${compact ? "grid-cols-1" : "grid-cols-[1.1fr_1.3fr_1fr]"}`}>
-        <div data-ap-decision-row>
-          <p className="text-[11px] text-muted">Suggested category</p>
-          <p className="mt-1 text-[14px] font-semibold">
-            <span className="tnum mr-1.5 text-muted">{preparedEntry.lines[0].code}</span>
-            {preparedEntry.lines[0].account}
-          </p>
-        </div>
-        <div data-ap-decision-row>
-          <p className="text-[11px] text-muted">Suggested VAT treatment</p>
-          <p className="mt-1 text-[14px] font-semibold">{preparedEntry.vatTreatment}</p>
-          <p className="text-[11.5px] text-muted">Input VAT recoverable, AED {aed(invoice.vat)}</p>
-        </div>
-        <div data-ap-decision-row>
-          <p className="text-[11px] text-muted">Amount (AED)</p>
-          <p className="tnum mt-1 text-[14px] font-semibold">{aed(invoice.total)}</p>
-          <p className="tnum text-[11.5px] text-muted">
-            Net {aed(invoice.net)} · VAT {aed(invoice.vat)}
-          </p>
-        </div>
+    <div data-ap-section data-ap-hl={hl} className="flex flex-col gap-1">
+      <p data-ap-section-label className="text-[12px] font-semibold text-muted">
+        {label}
+      </p>
+      <div className="relative">
+        {children}
+        <span data-ap-cover aria-hidden className="absolute -inset-0.5 origin-right bg-paper" style={{ transform: "scaleX(0)" }} />
       </div>
     </div>
   );
 }
 
-function ApproveButton({ large = false }: { large?: boolean }) {
+function Journal() {
   return (
-    <span
-      data-ap-approve
-      className={`relative inline-grid place-items-center overflow-hidden rounded-lg bg-accent font-medium text-white shadow-[0_1px_2px_rgb(2_50_212/0.3)] ${large ? "h-12 min-w-0 flex-1 px-4 text-[15px]" : "h-9 min-w-[118px] px-3.5 text-[12.5px]"}`}
+    <table className="w-full table-fixed text-[13px] tabular-nums">
+      <colgroup>
+        <col />
+        <col className="w-[76px]" />
+        <col className="w-[76px]" />
+      </colgroup>
+      <thead>
+        <tr className="text-left text-[12px] text-muted">
+          <th className="pb-1 font-normal">Account</th>
+          <th className="pb-1 text-right font-normal">Debit</th>
+          <th className="pb-1 text-right font-normal">Credit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {preparedEntry.lines.map((l) => (
+          <tr key={l.code} className="border-t border-line-soft">
+            <td className="truncate py-1 pr-2">
+              <span className="mr-1.5 text-muted">{l.code}</span>
+              {l.account}
+            </td>
+            <td className="py-1 text-right">{l.debit ? aed(l.debit) : ""}</td>
+            <td className="py-1 text-right">{l.credit ? aed(l.credit) : ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** The status chips cross-fade from Awaiting review to Approved. */
+function StatusChips() {
+  return (
+    <span className="stack">
+      <span data-ap-status-ready className="justify-self-end" style={{ opacity: 0 }}>
+        <Chip size="sm" tone="review">
+          Awaiting review
+        </Chip>
+      </span>
+      <span data-ap-status-approved className="justify-self-end">
+        <Chip size="sm" tone="done">
+          Approved
+        </Chip>
+      </span>
+    </span>
+  );
+}
+
+function RecordCard() {
+  return (
+    <AppCard
+      data-ap-panel
+      title="Decision record"
+      className="col-span-5 h-full overflow-hidden"
+      action={
+        <>
+          <Chip size="sm" tone="neutral">
+            Classification
+          </Chip>
+          <StatusChips />
+        </>
+      }
     >
-      <span data-ap-approve-hover aria-hidden className="absolute inset-0 bg-[#0232d4]" style={{ opacity: 0 }} />
+      {/* The record is longer than the card: its bottom shows when finished, and the timeline scrolls it as it writes. */}
+      <div data-ap-record-window className="relative flex min-h-0 flex-1 flex-col justify-end overflow-hidden">
+        <div data-ap-record-body className="flex flex-col gap-3">
+          <Section label="Issue">
+            <p className="text-[14px] font-semibold text-ink">{ISSUE}</p>
+          </Section>
+          <Section label="Evidence" hl="trn vat total">
+            <Fields
+              rows={[
+                ["Supplier", invoice.supplier],
+                ["Supplier TRN", formatTrn(invoice.supplierTrn)],
+                ["Invoice", `${invoice.number} · ${invoice.date}`],
+                ["Net · VAT · total", `${aed(invoice.net)} · ${aed(invoice.vat)} · ${aed(invoice.total)}`],
+              ]}
+            />
+          </Section>
+          <Section label="Context">
+            <Fields
+              rows={[
+                ["Client", client.name],
+                ["Period", "Nov 2026"],
+                ["Supplier mapping", `${costLine.code} · ${costLine.account} · SR`],
+              ]}
+            />
+          </Section>
+          <Section label="Rule, policy and precedents">
+            <Fields
+              rows={[
+                ["Rule", RULE],
+                ["Policy", POLICY],
+                ["Precedents", `${precedentBills} applied`],
+              ]}
+            />
+          </Section>
+          <Section label="Proposal" hl="lines">
+            <Journal />
+          </Section>
+          <Section label="Reasoning">
+            <p className="text-[13px] leading-[18px] text-ink">{explanation}</p>
+          </Section>
+          <Section label="Confidence">
+            <span className="flex items-center gap-2">
+              <ConfidenceBar value={0.94} />
+              <span className="text-[13px] text-muted">High</span>
+            </span>
+          </Section>
+        </div>
+      </div>
+    </AppCard>
+  );
+}
+
+function ApproveButton() {
+  return (
+    <span data-ap-approve className="relative inline-grid h-10 w-full place-items-center overflow-hidden rounded-full bg-ink text-[14px] font-semibold text-white">
+      <span data-ap-approve-hover aria-hidden className="absolute inset-0 bg-white/12" style={{ opacity: 0 }} />
       <span className="stack relative">
         <span data-ap-approve-label className="inline-flex items-center justify-center gap-1.5" style={{ opacity: 0 }}>
-          <IconCheck size={14} strokeWidth={2.2} /> Approve
+          Approve
         </span>
         <span data-ap-approved-label className="inline-flex items-center justify-center gap-1.5">
-          <IconCheck size={14} strokeWidth={2.4} /> Approved
+          <Check {...ICON_SM} strokeWidth={2.4} /> Approved
         </span>
       </span>
     </span>
   );
 }
 
-function FlagButton({ large = false }: { large?: boolean }) {
+function ActionsAndHistory() {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-lg border border-line bg-paper font-medium ${large ? "h-12 shrink-0 justify-center whitespace-nowrap px-3.5 text-[15px]" : "h-9 px-3 text-[12.5px]"}`}>
-      <IconFlag size={14} /> Flag for review
-    </span>
+    <div data-ap-actions className="col-span-3 flex flex-col gap-4">
+      <AppCard title="Actions">
+        <div className="flex flex-col gap-2">
+          <ApproveButton />
+          <PillButton variant="secondary" className="w-full">
+            <RotateCcw {...ICON_SM} /> Overturn
+          </PillButton>
+          <PillButton variant="secondary" className="w-full">
+            <MessageSquare {...ICON_SM} /> Ask client
+          </PillButton>
+        </div>
+        <span className="flex items-center gap-2 text-[13px] text-ink">
+          <span className="grid size-4 place-items-center rounded-[5px] bg-ink text-white">
+            <Check size={11} strokeWidth={3} />
+          </span>
+          Save as precedent
+        </span>
+      </AppCard>
+      <AppCard title="History">
+        <div className="flex flex-col gap-2 text-[13px]">
+          <p className="leading-[18px]">
+            <span className="font-semibold">
+              <Brand />
+            </span>{" "}
+            proposed 6120 Office supplies
+            <span className="block text-[12px] text-faint">{preparedEntry.preparedAt}</span>
+          </p>
+          <span className="stack">
+            <span data-ap-audit-pending className="text-[12px] text-muted" style={{ opacity: 0 }}>
+              {NOT_WRITTEN}
+            </span>
+            <span data-ap-audit-done className="leading-[18px]">
+              <span className="font-semibold">{firm.reviewer}</span> approved and saved a precedent
+              <span className="block text-[12px] text-faint">{preparedEntry.approvedAt}</span>
+            </span>
+          </span>
+        </div>
+      </AppCard>
+    </div>
   );
 }
 
@@ -85,87 +233,30 @@ function DesktopScene() {
     <Stage
       width={1200}
       height={600}
-      label={`Review workspace. The original invoice sits beside the suggested entry: category 6120 Office supplies, VAT standard rated at 5%, with four pieces of supporting evidence and an explanation. The accountant clicks Approve and the status changes from Ready for review to Approved.`}
+      label={`The oneth app's Decision screen for invoice ${invoice.number} from ${invoice.supplier}. The decision record lists the issue, the evidence from the invoice, the context, the rule, the firm's policy and ${precedentBills} precedents, the proposed journal (6120 Office supplies ${aed(invoice.net)}, input VAT ${aed(invoice.vat)}, payable ${aed(invoice.total)}), the reasoning and a high confidence. ${firm.reviewer} approves it and saves it as a precedent. Nothing is written to the books.`}
     >
-      <div className="card absolute inset-0 overflow-hidden rounded-2xl! bg-canvas/60 shadow-float!">
-        {/* Top bar */}
-        <div className="flex h-[52px] items-center gap-3 border-b border-line bg-paper px-5 text-[12.5px]">
-          <p className="text-muted">
-            Review queue <span className="mx-1 text-faint">/</span> {client.name} <span className="mx-1 text-faint">/</span>{" "}
-            <span className="font-medium text-ink">Bill {invoice.number}</span>
+      <div className="absolute inset-0 flex overflow-hidden rounded-[18px] border border-line bg-canvas font-app text-ink antialiased shadow-float">
+        <AppRail active="decisions" badge={13} />
+        <div className="flex min-w-0 flex-1 flex-col px-6 pb-6">
+          <AppTopBar title="Decision" />
+          <p className="-mt-3 mb-3 inline-flex items-center gap-1.5 text-[13px] text-muted">
+            <ArrowLeft {...ICON_SM} /> Back to decisions
           </p>
-          <span className="ml-auto text-[11.5px] text-muted">1 of 14</span>
-          <StatusBadges />
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-[#e6ecff] text-[10.5px] font-semibold text-accent-ink">{firm.reviewerInitials}</span>
-        </div>
-
-        {/* Source document */}
-        <div data-ap-doc className="absolute w-[380px]" style={{ left: 24, top: 70 }}>
-          <InvoiceDoc highlights={["lines", "trn", "vat", "total"]} className="shadow-soft!" />
-        </div>
-
-        {/* Suggested entry */}
-        <div data-ap-panel className="absolute flex flex-col text-[12.5px]" style={{ left: 432, top: 68, right: 24, bottom: 18 }}>
-          <div className="flex items-baseline justify-between">
-            <p className="text-[15px] font-semibold tracking-[-0.015em]">Suggested entry</p>
-            <p className="text-[11.5px] text-muted">
-              Prepared by <Brand /> · {preparedEntry.preparedAt}
-            </p>
-          </div>
-          <div className="mt-3">
-            <Decision />
-          </div>
-
-          <p className="mt-4 text-[11.5px] font-medium text-muted">Supporting evidence</p>
-          <div className="mt-2 grid grid-cols-2 gap-2.5">
-            {evidence.map((e) => {
-              const Icon = evidenceIcon[e.id as keyof typeof evidenceIcon];
-              return (
-                <div key={e.id} data-ap-evidence={e.id} className="flex gap-2.5 rounded-xl border border-line bg-paper p-3 shadow-soft">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent-ink">
-                    <Icon size={14} />
-                  </span>
-                  <div className="leading-snug">
-                    <p className="font-medium">{e.title}</p>
-                    <p className="mt-0.5 text-[11.5px] text-muted">{e.body}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div data-ap-expl className="mt-3 rounded-xl border border-line bg-paper px-3.5 py-2.5 leading-relaxed">
-            <p className="text-[11.5px] font-medium text-muted">Why this suggestion</p>
-            <p className="mt-0.5 text-[12px]">{explanation}</p>
-          </div>
-
-          <div className="mt-auto flex items-center gap-3 border-t border-line pt-3">
-            <span className="stack text-[11.5px] text-muted">
-              <span data-ap-audit-pending style={{ opacity: 0 }}>
-                Nothing is posted until you approve.
-              </span>
-              <span data-ap-audit-done>
-                Approved by {firm.reviewer} · {preparedEntry.approvedAt}
-              </span>
-            </span>
-            <span className="ml-auto flex items-center gap-2">
-              <FlagButton />
-              <ApproveButton />
-            </span>
+          <div className="grid min-h-0 flex-1 grid-cols-12 grid-rows-[minmax(0,1fr)] gap-4">
+            <AppCard data-ap-doc title="Document" className="col-span-4 h-full overflow-hidden">
+              <InvoiceDoc highlights={["lines", "trn", "vat", "total"]} compact className="shadow-none!" />
+            </AppCard>
+            <RecordCard />
+            <ActionsAndHistory />
           </div>
         </div>
-
-        {/* Confirmation toast */}
-        <div className="absolute flex justify-center" style={{ left: 24, width: 380, bottom: 22 }}>
-          <div data-ap-toast className="flex items-center gap-2 rounded-xl bg-ink px-3.5 py-2.5 text-[12px] text-white shadow-lift">
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-ok">
-              <IconCheck size={12} strokeWidth={2.6} />
-            </span>
-            Entry approved and recorded with its evidence.
+        <div className="pointer-events-none absolute bottom-6 left-[88px]">
+          <div data-ap-toast className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-[13px] text-white shadow-lift">
+            <CircleCheck {...ICON} className="text-ok-soft" />
+            Approved and recorded with its evidence. Saved as a precedent.
           </div>
         </div>
       </div>
-
       <div data-ap-cursor aria-hidden className="pointer-events-none absolute left-0 top-0 z-20" style={{ opacity: 0 }}>
         <CursorPointer />
       </div>
@@ -178,10 +269,9 @@ const HOLD_MS = 1100;
 const reasons = [{ id: "why", title: "Why this", body: explanation }, ...evidence.map((e) => ({ id: e.id, title: e.title, body: e.body }))];
 
 /**
- * Phones: "Hold to approve". One review card. The evidence sits in chips you
- * can open. At the bottom, press and hold the button until its ring fills to
- * approve, so the visitor does the approving themselves. The first time the
- * card is on screen it shows the gesture once, then hands it over.
+ * Phones: "Hold to approve", on the app's Decision record and Actions cards. The evidence sits in pills you can open.
+ * Press and hold the ink button until it fills to approve. The first time the card is on screen it shows the gesture
+ * once, then hands it over.
  */
 function MobileScene() {
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -284,84 +374,93 @@ function MobileScene() {
   const current = reasons.find((r) => r.id === open) ?? reasons[0];
 
   return (
-    <div data-mobile className="container-x mt-10 max-w-xl lg:hidden">
-      <div ref={cardRef} data-reveal className="card overflow-hidden text-[13px]">
-        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-          <div className="min-w-0 leading-tight">
-            <p className="tnum font-semibold">Bill {invoice.number}</p>
-            <p className="truncate text-[12px] text-muted">{invoice.supplier}</p>
+    <div data-mobile className="container-x mt-10 max-w-xl font-app lg:hidden">
+      <div ref={cardRef} data-reveal className="flex flex-col gap-3">
+        <AppCard
+          title="Decision record"
+          action={
+            <Chip size="sm" tone={approved ? "done" : "review"}>
+              <span aria-live="polite">{approved ? "Approved" : "Awaiting review"}</span>
+            </Chip>
+          }
+        >
+          <div className="flex flex-col gap-1">
+            <p className="text-[12px] font-semibold text-muted">Issue</p>
+            <p className="text-[14px] font-semibold leading-[20px]">{ISSUE}</p>
+            <p className="text-[13px] text-muted">{client.name}</p>
           </div>
-          <span className={`pill shrink-0 text-[11px]! transition-colors ${approved ? "pill-ok" : "pill-accent"}`} aria-live="polite">
-            {approved ? (
-              <>
-                <IconCheck size={11} strokeWidth={2.6} /> Approved
-              </>
-            ) : (
-              "Ready for review"
-            )}
+          <div className="flex flex-col gap-1">
+            <p className="text-[12px] font-semibold text-muted">Proposal</p>
+            <Fields
+              rows={[
+                ["Account", `${costLine.code} · ${costLine.account}`],
+                ["VAT", `Standard rated 5% · ${aed(vatLine.debit)}`],
+                ["Payable", `AED ${aed(payableLine.credit)}`],
+              ]}
+            />
+          </div>
+          <span className="flex items-center gap-2">
+            <ConfidenceBar value={0.94} />
+            <span className="text-[13px] text-muted">High confidence</span>
           </span>
-        </div>
-
-        <div className="space-y-4 p-4">
-          <Decision compact />
-
-          <div>
-            <p className="text-[12px] font-medium text-muted">Evidence</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-2">
+            <p className="text-[12px] font-semibold text-muted">Evidence</p>
+            <div className="flex flex-wrap gap-1.5">
               {reasons.map((r) => (
                 <button
                   key={r.id}
                   type="button"
                   aria-pressed={open === r.id}
                   onClick={() => setOpen(r.id)}
-                  className={`min-h-9 rounded-full border px-3 text-[12.5px] font-medium transition-colors ${
-                    open === r.id ? "border-accent bg-accent-soft text-accent-ink" : "border-line bg-paper text-muted"
+                  className={`min-h-9 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
+                    open === r.id ? "bg-ink text-white" : "bg-line-soft text-muted"
                   }`}
                 >
                   {r.title}
                 </button>
               ))}
             </div>
-            <p key={current.id} className="anim-rise mt-2.5 rounded-xl bg-canvas p-3 leading-relaxed" aria-live="polite">
+            <p key={current.id} className="anim-rise rounded-app-tile bg-line-soft p-3.5 text-[14px] leading-[20px]" aria-live="polite">
               {current.body}
             </p>
           </div>
+        </AppCard>
 
-          <div>
-            <button
-              ref={btnRef}
-              type="button"
-              disabled={approved}
-              onPointerDown={(e) => {
+        <AppCard title="Actions">
+          <button
+            ref={btnRef}
+            type="button"
+            disabled={approved}
+            onPointerDown={(e) => {
+              start();
+              // Keep receiving the release even if the finger drifts off the button
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId);
+              } catch {
+                /* not an active pointer: the hold still works without capture */
+              }
+            }}
+            onPointerUp={stop}
+            onPointerCancel={stop}
+            onLostPointerCapture={stop}
+            onKeyDown={(e) => {
+              if ((e.key === " " || e.key === "Enter") && !e.repeat) {
+                e.preventDefault();
                 start();
-                // Keep receiving the release even if the finger drifts off the button
-                try {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                } catch {
-                  /* not an active pointer: the hold still works without capture */
-                }
-              }}
-              onPointerUp={stop}
-              onPointerCancel={stop}
-              onLostPointerCapture={stop}
-              onKeyDown={(e) => {
-                if ((e.key === " " || e.key === "Enter") && !e.repeat) {
-                  e.preventDefault();
-                  start();
-                }
-              }}
-              onKeyUp={(e) => {
-                if (e.key === " " || e.key === "Enter") stop();
-              }}
-              onContextMenu={(e) => e.preventDefault()}
-              aria-label={approved ? "Approved" : "Press and hold to approve"}
-              className="relative flex h-14 w-full touch-manipulation select-none items-center justify-center gap-3 overflow-hidden rounded-2xl bg-ink text-[15px] font-medium text-white [-webkit-touch-callout:none] disabled:bg-ok"
-              style={{ "--p": 0 } as React.CSSProperties}
-            >
-              <span aria-hidden className="absolute inset-0 origin-left bg-accent transition-opacity" style={{ transform: "scaleX(var(--p))", opacity: approved ? 0 : 1 }} />
-              {approved ? (
-                <IconCheck size={20} strokeWidth={2.6} className="relative" />
-              ) : (
+              }
+            }}
+            onKeyUp={(e) => {
+              if (e.key === " " || e.key === "Enter") stop();
+            }}
+            onContextMenu={(e) => e.preventDefault()}
+            aria-label={approved ? "Approved" : "Press and hold to approve"}
+            className="relative flex h-14 w-full touch-manipulation select-none items-center justify-center gap-3 overflow-hidden rounded-full bg-ink text-[15px] font-semibold text-white [-webkit-touch-callout:none] disabled:bg-ok"
+            style={{ "--p": 0 } as React.CSSProperties}
+          >
+            <span aria-hidden className="absolute inset-0 origin-left bg-accent transition-opacity" style={{ transform: "scaleX(var(--p))", opacity: approved ? 0 : 1 }} />
+            {approved ? (
+              <Check size={20} strokeWidth={2.6} className="relative" />
+            ) : (
               <svg aria-hidden viewBox="0 0 24 24" className="relative h-6 w-6 -rotate-90">
                 <circle cx="12" cy="12" r="9.5" fill="none" stroke="rgb(255 255 255 / 0.25)" strokeWidth="2.5" />
                 <circle
@@ -377,28 +476,27 @@ function MobileScene() {
                   style={{ strokeDashoffset: "calc(1 - var(--p))" }}
                 />
               </svg>
-              )}
-              <span className="relative">{approved ? "Approved" : "Press and hold to approve"}</span>
-              {hint === "demo" && !approved && (
-                <span aria-hidden className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-white/30" />
-              )}
-            </button>
-            <div className="mt-2.5 flex min-h-6 items-center justify-between text-[12.5px] text-muted">
-              <span>
-                {approved
-                  ? `Approved by you · Recorded with its evidence`
-                  : hint === "your-turn"
-                    ? "Your turn. Press and hold the button."
-                    : "Nothing is posted until someone approves."}
-              </span>
-              {approved && (
-                <button type="button" onClick={reset} className="min-h-9 px-1 font-medium text-ink underline underline-offset-2">
-                  Reset
-                </button>
-              )}
-            </div>
+            )}
+            <span className="relative">{approved ? "Approved" : "Press and hold to approve"}</span>
+            {hint === "demo" && !approved && (
+              <span aria-hidden className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-white/30" />
+            )}
+          </button>
+          <div className="flex min-h-6 items-center justify-between gap-3 text-[13px] text-muted">
+            <span>
+              {approved
+                ? "Approved by you · Recorded with its evidence"
+                : hint === "your-turn"
+                  ? "Your turn. Press and hold the button."
+                  : NOT_WRITTEN}
+            </span>
+            {approved && (
+              <button type="button" onClick={reset} className="min-h-9 shrink-0 px-1 font-semibold text-ink underline underline-offset-2">
+                Reset
+              </button>
+            )}
           </div>
-        </div>
+        </AppCard>
       </div>
     </div>
   );
@@ -429,7 +527,7 @@ export default function ApprovalWorkflow() {
         className="container-x"
         pinned
       >
-        Every suggested decision includes its supporting evidence.
+        Every decision comes with its record: the evidence, the rule, your firm&apos;s policy and its precedents.
       </SectionHeading>
       <div data-desktop className="container-x mt-6 hidden min-h-0 flex-1 lg:block">
         <DesktopScene />
