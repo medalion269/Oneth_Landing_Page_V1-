@@ -35,7 +35,7 @@ You are picking up an existing project: the pre-launch landing page for **oneth 
 - Amounts and VAT (5%) are derived in code so every scene agrees. The featured invoice is INV-2026-0418, AED 3,550.00 + 177.50 VAT = 3,727.50.
 
 ## Architecture
-- `app/page.tsx` sets the section order: Navbar, Hero, DocumentWorkflow, Reconciliation, ApprovalWorkflow, KnowledgeScene, ApprovalLimits, PortalScene, PeriodCloseScene, Features, Outlook, PilotForm, Footer, MobileTabBar, ScrollManager.
+- `app/page.tsx` sets the section order: Navbar, Hero, DocumentWorkflow, Reconciliation, ApprovalWorkflow, KnowledgeScene, PortalScene, Features, Outlook, PilotForm, Footer, MobileTabBar, ScrollManager.
 - This app's root is `landing/` (its own package.json, config and docs). The "Sign in" links go to the app at `NEXT_PUBLIC_APP_URL` + `/login` (`lib/app-url.ts`): in development they default to http://localhost:5173, and a production build without the variable hides them.
 - `lib/animations.ts` holds every scroll timeline, one function per section. Each uses `gsap.matchMedia()` with three modes:
   - **desktop** (>=1024px with motion): pinned, scrubbed, reversible timelines
@@ -53,7 +53,7 @@ You are picking up an existing project: the pre-launch landing page for **oneth 
 - **Prepare, "Scan to ledger"** (`DocumentWorkflow.tsx` MobileScene plus the docs mobile branch in `animations.ts`): the section pins while a scan line sweeps down the invoice. Each field lifts off as a chip into its ledger slot, the "x of 5 fields read" counter rises, and the app's "Needs review" chip lands as the stamp.
 - **Reconciliation, "Zip the books":** bank lines and documents slide in from opposite sides and join. The "Unreconciled" amount counts down from 32,623.65 to 7,399.00, and the exceptions drop into a "Needs you" tray. Scrubbed, not pinned.
 - **Review, "Hold to approve":** the app's Decision record and Actions cards, and a press-and-hold button with a filling ring. It runs a one-time auto demo, then says "Your turn". This is React state, not GSAP.
-- **Knowledge, Client portal, Period close:** not pinned. The precedent drops in; the portal fills the screen (no phone inside the phone) and the answer is typed, attached and sent as you scroll; the checklist turns Done row by row before the sign-off lands. Phone timelines never change an element's height, so the page below doesn't move while they play.
+- **Knowledge, Client portal:** not pinned. The precedent drops in; the portal fills the screen (no phone inside the phone) and the answer is typed, attached and sent as you scroll. Phone timelines never change an element's height, so the page below doesn't move while they play.
 - **Features, "A month, cleared"** (phones under 640px only): one client's November to-do list. Rows tick from To do to Prepared as you scroll. Tablets and desktop show the 6-card grid instead.
 
 ## The scenes are the app (redesigned 2026-11-17)
@@ -62,11 +62,9 @@ The user asked for the page to show how the product really works, keeping the fl
 - **Prepare / Reconcile:** the Document card and decision record; Bank lines and Ledger items with the Needs your review panel.
 - **Review** (`ApprovalWorkflow.tsx`, `writeRecord`): the Decision screen. The decision record (issue, evidence, context, rule, policy, precedents, proposal, reasoning, confidence) writes itself in, lighting up the invoice, then a cursor approves. The old "working paper" scene (`DecisionPaper.tsx`) is folded in here and deleted.
 - **Knowledge** (`KnowledgeScene.tsx`): the approval is saved as a precedent and drops into the Precedents tab; the next Desert Line bill (INV-2026-0441) is proposed citing it.
-- **You set the limits** (`ApprovalLimits.tsx`): Settings, Permissions, one mode and one AED limit per action (Off, Propose, Auto, Auto under a threshold). Send routine requests and Post entries stay Propose; Submit tax returns is locked Off. The month stepper keeps the pilot-to-month-3 story.
 - **Client portal** (`PortalScene.tsx`): the client's phone shows the portal's Questions tab under the firm's name and colour; the client types an answer, photographs the Bazaar Lane tax invoice and sends. Beside it, the client's Communications tab: the question turns Answered, the reply arrives, then oneth proposes settling the payment against the invoice (`propose_settlement`). The decision itself stays open for a person; there is no "client answered" status in the app.
-- **Period close** (`PeriodCloseScene.tsx`): October's checklist with the engine's own wording (`backend/engine/close.py`) turns Done; once nothing is Blocked the period is Ready for sign-off; a partner (Aisha Rahman, AR) signs off through the app's confirm dialog and the month is locked. oneth's depreciation adjustment is shown as proposed.
 - **Where this goes** (`Outlook.tsx`): one line before the form about a live view of each client's cash flow, margins and obligations, framed as something the firm offers.
-- Left out on purpose: pricing (unvalidated), two-step login and audit-record security claims, "time saved", the build roadmap, lender data sharing, Corporate Tax and e-invoicing cards.
+- Left out on purpose: the "You set the limits" (Settings, Permissions) and "Period close" scenes (removed 17 Nov 2026 at the user's request, see `docs/DECISIONS.md` L3), pricing (unvalidated), two-step login and audit-record security claims, "time saved", the build roadmap, lender data sharing, Corporate Tax and e-invoicing cards.
 
 ## How I like to work
 - When I share a reference (a site or a recording), take the idea and come up with **original variations**. Do not copy its layout or patterns. Show me options and let me pick before building big design changes.

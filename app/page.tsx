@@ -4,9 +4,7 @@ import DocumentWorkflow from "@/components/DocumentWorkflow";
 import Reconciliation from "@/components/Reconciliation";
 import ApprovalWorkflow from "@/components/ApprovalWorkflow";
 import KnowledgeScene from "@/components/KnowledgeScene";
-import ApprovalLimits from "@/components/ApprovalLimits";
 import PortalScene from "@/components/PortalScene";
-import PeriodCloseScene from "@/components/PeriodCloseScene";
 import Features from "@/components/Features";
 import Outlook from "@/components/Outlook";
 import PilotForm from "@/components/PilotForm";
@@ -30,9 +28,7 @@ export default function Home() {
         <Reconciliation />
         <ApprovalWorkflow />
         <KnowledgeScene />
-        <ApprovalLimits />
         <PortalScene />
-        <PeriodCloseScene />
         <Features />
         <Outlook />
         <PilotForm />

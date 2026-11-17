@@ -98,9 +98,7 @@ components/
   Reconciliation.tsx    Reconcile: the app's Bank lines and Ledger items cards, Needs your review panel
   ApprovalWorkflow.tsx  Review: the app's Decision screen; its decision record writes itself in, a cursor approves
   KnowledgeScene.tsx    Knowledge: a precedent is saved (Precedents tab), then the next bill cites it
-  ApprovalLimits.tsx    "You set the limits": the app's Settings, Permissions, pilot month to month 3
   PortalScene.tsx       Client portal: the client answers and sends a photo; the firm's Communications tab updates
-  PeriodCloseScene.tsx  Period close: the checklist turns Done, a partner signs off, the month is locked
   app/ui.tsx            the app's building blocks (rail, top bar, cards, chips, rows, pills) for the mockups
   Features.tsx          six feature cards, supported tools, UAE data commitment
   Outlook.tsx           one line on where the product is going, just before the form
