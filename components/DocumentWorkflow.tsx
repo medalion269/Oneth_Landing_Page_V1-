@@ -94,7 +94,7 @@ function EntryPanel() {
               Classification
             </Chip>
             <Chip size="sm" tone="review">
-              Awaiting review
+              Needs review
             </Chip>
           </span>
         </header>
@@ -342,7 +342,7 @@ function MobileScene() {
             <div data-ledger-foot className="mt-2.5 flex items-center justify-between gap-2">
               <span data-stamp className="inline-flex">
                 <Chip size="sm" tone="review">
-                  Awaiting review
+                  Needs review
                 </Chip>
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ok">

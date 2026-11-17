@@ -83,13 +83,13 @@ function Journal() {
   );
 }
 
-/** The status chips cross-fade from Awaiting review to Approved. */
+/** The status chips cross-fade from Needs review (the app's chip for a decision awaiting review) to Approved. */
 function StatusChips() {
   return (
     <span className="stack">
       <span data-ap-status-ready className="justify-self-end" style={{ opacity: 0 }}>
         <Chip size="sm" tone="review">
-          Awaiting review
+          Needs review
         </Chip>
       </span>
       <span data-ap-status-approved className="justify-self-end">
@@ -380,7 +380,7 @@ function MobileScene() {
           title="Decision record"
           action={
             <Chip size="sm" tone={approved ? "done" : "review"}>
-              <span aria-live="polite">{approved ? "Approved" : "Awaiting review"}</span>
+              <span aria-live="polite">{approved ? "Approved" : "Needs review"}</span>
             </Chip>
           }
         >

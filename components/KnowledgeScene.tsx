@@ -97,7 +97,7 @@ function NextDecision({ compact = false }: { compact?: boolean }) {
       title="Decision record"
       action={
         <Chip size="sm" tone="review">
-          Awaiting review
+          Needs review
         </Chip>
       }
       className={compact ? "" : "h-full"}
