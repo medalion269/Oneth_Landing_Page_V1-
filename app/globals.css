@@ -48,6 +48,9 @@
   --font-app: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --color-blocked: #b91c1c;
   --color-blocked-soft: #fee2e2;
+  /* The fictional firm's own colour: its client portal carries the firm's brand, not oneth's */
+  --color-firm: #0e6b57;
+  --color-firm-soft: #e3f1ed;
   --radius-app-card: 24px;
   --radius-app-tile: 14px;
   --shadow-app: 0 1px 2px rgb(0 0 0 / 0.04);

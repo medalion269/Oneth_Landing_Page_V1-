@@ -37,6 +37,9 @@ export const firm = {
   reviewer: "Sara Malik",
   reviewerRole: "Senior accountant",
   reviewerInitials: "SM",
+  /** Only partners sign off a period (the app disables Sign off for everyone else). */
+  partner: "Aisha Rahman",
+  partnerInitials: "AR",
 };
 
 export const client = {
@@ -44,6 +47,8 @@ export const client = {
   short: "Saffron Grove",
   trn: "100987654300003",
   contact: "Omar",
+  /** The contact's full name, as the portal and the audit trail show it. */
+  contactName: "Omar Haddad",
   account: "4021",
 };
 
@@ -171,7 +176,7 @@ export type DecisionState = "escalated" | "awaiting_review" | "approved" | "over
 
 export const DECISION_STATE_LABEL: Record<DecisionState, string> = {
   escalated: "Escalated",
-  awaiting_review: "Awaiting review",
+  awaiting_review: "Needs review",
   approved: "Approved",
   overturned: "Overturned",
 };
@@ -327,4 +332,106 @@ export const nextInvoice = {
   vat: vatOn(nextNet), // 61.00
   total: round2(nextNet + vatOn(nextNet)), // 1,281.00
   confidence: 0.97,
+};
+
+/* ------------------------------------------------------------------ */
+/* Client portal: the client answers a question and sends the receipt  */
+/* ------------------------------------------------------------------ */
+
+const missingLine = bankTransactions.find((t) => t.state === "missing")!;
+
+/**
+ * The Bazaar Lane card payment that Reconcile could not explain. A person asked the client about it; the portal shows
+ * the firm's message as the question, with the bank line under it (the backend's PortalQuestion). The client replies
+ * with a photo; oneth reads it and proposes settling the line against it (pipeline/client_requests.propose_settlement).
+ */
+export const portalQuestion = {
+  message: "What was this card payment for? Please send us the receipt.",
+  line: { description: missingLine.description, date: "12 Nov 2026", amount: -missingLine.amount },
+  /** The request's title in the firm app, as ask_client() writes it. */
+  title: `A payment of AED ${aed(-missingLine.amount)} on 12 Nov 2026`,
+  answer: "Folding chairs for the Marina branch terrace. Receipt attached.",
+  photo: "IMG_4417.jpg",
+  askedAt: "13 Nov 2026, 09:40",
+  answeredAt: "14 Nov 2026, 18:22",
+  reproposedAt: "14 Nov 2026, 18:23",
+};
+
+/** Other requests in the client's Communications tab (the app's requestStatus labels). */
+export const otherRequests = [
+  { title: "November bank statement", asked: "3 Nov 2026", status: "Waiting" as const },
+  { title: "Tenancy contract, Marina branch", asked: "28 Oct 2026", status: "Answered" as const },
+];
+
+/** This month's progress on the portal's Home tab: the share of close checklist items that are done. */
+export const portalProgress = 40;
+
+/* ------------------------------------------------------------------ */
+/* Period close: Saffron Grove's October, from in progress to signed off */
+/* ------------------------------------------------------------------ */
+
+export type ChecklistStatus = "ok" | "warning" | "blocked";
+/** The app's chip for each checklist status (frontend/src/lib/periods.ts). */
+export const CHECKLIST_LABEL: Record<ChecklistStatus, string> = { ok: "Done", warning: "Check", blocked: "Blocked" };
+
+const unmatched = [1260, 1050];
+
+/**
+ * The close checklist the engine builds (backend/engine/close.py), with its exact wording. `before` is where October
+ * stood when the month ended; `after` is the finished checklist the partner signs off.
+ */
+export const closeChecklist: {
+  key: string;
+  label: string;
+  before: { status: ChecklistStatus; detail: string };
+  after: { status: ChecklistStatus; detail: string | null };
+}[] = [
+  {
+    key: "documents_processed",
+    label: "All documents processed",
+    before: { status: "warning", detail: "2 documents still processing" },
+    after: { status: "ok", detail: "86 documents processed" },
+  },
+  {
+    key: "bank_reconciled",
+    label: "Bank statement reconciled",
+    before: { status: "warning", detail: `${unmatched.length} bank lines not matched (AED ${aed(unmatched.reduce((a, b) => a + b, 0))})` },
+    after: { status: "ok", detail: "All 214 bank lines matched or explained" },
+  },
+  {
+    key: "decisions_reviewed",
+    label: "All decisions reviewed",
+    before: { status: "blocked", detail: "3 awaiting review" },
+    after: { status: "ok", detail: "All 158 decisions reviewed" },
+  },
+  {
+    key: "missing_evidence",
+    label: "No missing evidence",
+    before: { status: "blocked", detail: "1 item waiting for evidence from the client" },
+    after: { status: "ok", detail: null },
+  },
+  {
+    key: "vat_workings",
+    label: "VAT workings prepared",
+    before: { status: "warning", detail: "2 decisions affecting VAT still open" },
+    after: { status: "ok", detail: null },
+  },
+];
+
+/** Only blocked items hold up sign-off. */
+export const blockedAtStart = closeChecklist.filter((i) => i.before.status === "blocked").length;
+
+export const closePeriod = {
+  month: "October 2026",
+  signedOffAt: "17 Nov 2026, 16:40",
+};
+
+const usefulLife = 36; // months: the capitalisation policy (backend/engine/depreciation.py)
+const hoodCost = 18900;
+/** oneth's month-end adjustment: straight-line depreciation of an asset capitalised in September (month 2 of 36). */
+export const depreciation = {
+  description: `Depreciation: Kitchen extraction hood (month 2 of ${usefulLife})`,
+  charge: round2(hoodCost / usefulLife), // 525.00
+  expense: { code: "6710", name: "Depreciation" },
+  accumulated: { code: "1590", name: "Accumulated depreciation" },
 };

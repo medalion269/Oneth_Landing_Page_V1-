@@ -394,7 +394,7 @@ export function documentWorkflowAnimation(root: HTMLElement) {
 
     const end = SCAN_START + SCAN_LEN;
     tl.fromTo($(stage, "[data-ledger-foot]"), { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.4 }, end + 0.6)
-      // The proposal joins the review queue (the app's Awaiting review chip)
+      // The proposal joins the review queue (the app's Needs review chip)
       .fromTo(
         $(stage, "[data-stamp]"),
         { opacity: 0, scale: 1.5 },
@@ -795,7 +795,278 @@ export function limitsAnimation(root: HTMLElement) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4d. Where this goes: a single line before the form                   */
+/* 4d. Client portal: the client answers and snaps the receipt          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The conversation gains the client's reply, then oneth's re-proposal, newest first: the older entries start higher by
+ * the new ones' height and move down as each arrives. Returns nothing; `t1` and `t2` are the two arrivals.
+ */
+function growConversation(tl: gsap.core.Timeline, scope: HTMLElement, t1: number, t2: number) {
+  const onethMsg = $(scope, '[data-pt-msg="oneth"]');
+  const reply = $(scope, '[data-pt-msg="client"]');
+  const ask = $(scope, '[data-pt-msg="ask"]');
+  if (!onethMsg || !reply || !ask) return;
+  const s1 = () => onethMsg.offsetHeight;
+  const s2 = () => reply.offsetHeight;
+  tl.fromTo(ask, { y: () => -(s1() + s2()) }, { y: () => -s1(), duration: 0.5, ease: "power2.inOut" }, t1)
+    .fromTo(reply, { y: () => -s1(), opacity: 0 }, { y: () => -s1(), opacity: 1, duration: 0.4 }, t1 + 0.15)
+    .to([reply, ask], { y: 0, duration: 0.5, ease: "power2.inOut" }, t2)
+    .fromTo(onethMsg, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, t2 + 0.5)
+    .fromTo($(onethMsg, "[data-pt-glow]"), { opacity: 0 }, { opacity: 1, duration: 0.3 }, t2 + 0.55)
+    .to($(onethMsg, "[data-pt-glow]"), { opacity: 0, duration: 0.6 }, t2 + 1.4);
+}
+
+/** The answer is typed word by word and Send answer wakes up. */
+function typeAnswer(tl: gsap.core.Timeline, scope: HTMLElement, t: number) {
+  tl.fromTo($$(scope, "[data-pt-word]"), { opacity: 0 }, { opacity: 1, duration: 0.01, stagger: 0.09 }, t)
+    .fromTo($(scope, "[data-pt-send-off]"), { opacity: 0.5 }, { opacity: 0, duration: 0.2 }, t + 0.1)
+    .fromTo($(scope, "[data-pt-send]"), { opacity: 0 }, { opacity: 1, duration: 0.2 }, t + 0.1);
+}
+
+/** The photo is attached: the button gives way to the attachment row. */
+function attachPhoto(tl: gsap.core.Timeline, scope: HTMLElement, t: number) {
+  tl.fromTo($(scope, "[data-pt-attach]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, t).fromTo(
+    $(scope, "[data-pt-attached]"),
+    { opacity: 0, y: 6 },
+    { opacity: 1, y: 0, duration: 0.35, ease: "back.out(2)" },
+    t + 0.1,
+  );
+}
+
+export function portalAnimation(root: HTMLElement) {
+  const mm = gsap.matchMedia();
+
+  mm.add(MEDIA.desktop, () => {
+    revealHeading(root);
+    const stage = $(root, "[data-desktop] [data-stage]");
+    if (!stage) return;
+    const screen = $(stage, "[data-pt-screen]")!;
+    const wrap = $(stage, "[data-pt-scale]")!;
+    const tap = $(stage, "[data-pt-tap]")!;
+    const form = $(stage, "[data-pt-form]")!;
+    const inner = $(stage, "[data-pt-form-inner]")!;
+    const camera = $(stage, "[data-pt-camera]")!;
+    const scroller = $(stage, "[data-pt-scroll]")!;
+    const scale = Number(wrap.dataset.ptScale) || 1;
+    const TAP = 20; // half the tap ring
+
+    // While the form is open the page is taller than the screen: it scrolls up by this much (in page pixels)
+    const scrollBy = () => {
+      const room = (screen.clientHeight - offsetWithin(wrap, screen).y) / scale;
+      return Math.max(0, scroller.offsetHeight - room + 16);
+    };
+    // Where a tap lands: portal elements are inside the scaled (and maybe scrolled) page, the camera's shutter is not
+    const inPortal = (sel: string, scrolled = true) => () => {
+      const w = offsetWithin(wrap, screen);
+      const b = offsetWithin($(stage, sel)!, wrap);
+      const dy = scrolled ? scrollBy() : 0;
+      return { x: w.x + (b.x + b.w / 2) * scale - TAP, y: w.y + (b.y + b.h / 2 - dy) * scale - TAP };
+    };
+    const onScreen = (sel: string) => () => {
+      const b = offsetWithin($(stage, sel)!, screen);
+      return { x: b.x + b.w / 2 - TAP, y: b.y + b.h / 2 - TAP };
+    };
+    const tapAt = (where: () => { x: number; y: number }, t: number) =>
+      tl
+        .fromTo(tap, { x: () => where().x, y: () => where().y, opacity: 0, scale: 0.6 }, { x: () => where().x, y: () => where().y, opacity: 1, scale: 1, duration: 0.12 }, t)
+        .to(tap, { opacity: 0, scale: 1.5, duration: 0.3 }, t + 0.15);
+
+    // The phone and the firm's app arrive with the section (not scrubbed, so the pinned frame is never empty)
+    gsap.fromTo(
+      [$(stage, "[data-pt-phone]"), $(stage, "[data-pt-app]")],
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 1, ease: "expo.out", stagger: 0.12, scrollTrigger: { trigger: root, start: "top 70%", toggleActions: "play none none reverse" } },
+    );
+
+    const tl = pinnedTimeline(root, "280%");
+    // The client answers in words (the page scrolls to the answer field)…
+    tl.fromTo(scroller, { y: 0 }, { y: () => -scrollBy(), duration: 0.5, ease: "power2.inOut" }, 0.4);
+    tapAt(inPortal("[data-pt-textarea]"), 0.9);
+    typeAnswer(tl, stage, 1.1);
+
+    // …photographs the receipt…
+    tapAt(inPortal("[data-pt-attach]"), 2.2);
+    tl.fromTo(camera, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 }, 2.35);
+    tapAt(onScreen("[data-pt-shutter]"), 2.95);
+    tl.fromTo($(stage, "[data-pt-flash]"), { opacity: 0 }, { opacity: 1, duration: 0.06 }, 3.1)
+      .to($(stage, "[data-pt-flash]"), { opacity: 0, duration: 0.25 }, 3.16)
+      .to(camera, { autoAlpha: 0, duration: 0.25 }, 3.4);
+    attachPhoto(tl, stage, 3.5);
+
+    // …and sends. The portal swaps the form for its thank-you, as the app does
+    tapAt(inPortal("[data-pt-send]"), 4.0);
+    tl.to(scroller, { y: 0, duration: 0.45, ease: "power2.inOut" }, 4.2);
+    tl.fromTo(form, { height: () => inner.offsetHeight, opacity: 1 }, { height: 0, opacity: 0, duration: 0.45, ease: "power2.inOut" }, 4.2).fromTo(
+      $(stage, "[data-pt-answered]"),
+      { opacity: 0, scale: 0.85 },
+      { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" },
+      4.45,
+    );
+
+    // The firm sees it: the question is Answered, the reply arrives, then oneth's proposal from the receipt
+    tl.fromTo($(stage, "[data-pt-req-before]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, 4.7).fromTo(
+      $(stage, "[data-pt-req-after]"),
+      { opacity: 0, scale: 0.85 },
+      { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" },
+      4.8,
+    );
+    growConversation(tl, stage, 4.8, 5.7);
+    tl.to({}, { duration: 1 }, 6.9);
+  });
+
+  // Phones and tablets: no pin, and no change of height (the page below must not move while it plays). The form stays
+  // open with the answer in it, and the thank-you takes the Send button's place.
+  mm.add(MEDIA.mobile, () => {
+    revealHeading(root);
+    const scene = $(root, "[data-mobile]");
+    const card = scene ? $(scene, "[data-pt-card]") : null;
+    const form = scene ? $(scene, "[data-pt-form]") : null;
+    const inner = scene ? $(scene, "[data-pt-form-inner]") : null;
+    const talk = scene ? $(scene, "[data-pt-conversation]") : null;
+    if (!scene || !card || !form || !inner || !talk) return;
+    gsap.set(form, { height: () => inner.offsetHeight, opacity: 1 });
+    gsap.set($(scene, "[data-pt-answered]"), { opacity: 0 });
+    const answer = gsap.timeline({
+      defaults: { ease: "none" },
+      scrollTrigger: { trigger: card, start: "top 60%", end: "bottom 45%", scrub: 0.6, invalidateOnRefresh: true },
+    });
+    typeAnswer(answer, scene, 0);
+    attachPhoto(answer, scene, 1.2);
+    answer
+      .to($(scene, "[data-pt-send]"), { scale: 0.96, duration: 0.1 }, 1.8)
+      .to($(scene, "[data-pt-send]"), { scale: 1, duration: 0.1 }, 1.9)
+      .to($(scene, "[data-pt-send]"), { opacity: 0, duration: 0.2 }, 2.0)
+      .fromTo($(scene, "[data-pt-answered-inline]"), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 2.1);
+    const firmSide = gsap.timeline({
+      defaults: { ease: "none" },
+      scrollTrigger: { trigger: talk, start: "top 75%", end: "bottom 60%", scrub: 0.6, invalidateOnRefresh: true },
+    });
+    growConversation(firmSide, scene, 0, 1);
+  });
+
+  return mm;
+}
+
+/* ------------------------------------------------------------------ */
+/* 4e. Period close: the checklist fills in, then a partner signs off   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Turn the checklist rows from their month-end state to Done, `gap` apart from `start`. Once the last blocked row is
+ * done the period is Ready for sign-off: the reason goes and the button wakes up (warnings don't hold sign-off up, as
+ * in the app). Returns the time after the last row.
+ */
+function fillChecklist(tl: gsap.core.Timeline, scope: HTMLElement, start: number, gap: number) {
+  const rows = $$(scope, "[data-close-row]");
+  let unblocked = start;
+  rows.forEach((row, i) => {
+    const t = start + i * gap;
+    tl.fromTo($$(row, "[data-close-before]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, t).fromTo(
+      $$(row, "[data-close-after]"),
+      { opacity: 0, y: 4 },
+      { opacity: 1, y: 0, duration: 0.35, ease: "back.out(2)" },
+      t + 0.1,
+    );
+    if (row.hasAttribute("data-blocked")) unblocked = t + 0.4;
+  });
+  tl.fromTo($(scope, '[data-close-status="progress"]'), { opacity: 1 }, { opacity: 0, duration: 0.15 }, unblocked)
+    .fromTo($(scope, '[data-close-status="ready"]'), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, unblocked + 0.15)
+    .fromTo($(scope, "[data-close-reason]"), { opacity: 1 }, { opacity: 0, duration: 0.25 }, unblocked)
+    .fromTo($(scope, "[data-close-btn-off]"), { opacity: 0.4 }, { opacity: 0, duration: 0.25 }, unblocked + 0.1)
+    .fromTo($(scope, "[data-close-btn]"), { opacity: 0 }, { opacity: 1, duration: 0.25 }, unblocked + 0.1);
+  return start + rows.length * gap;
+}
+
+/**
+ * The partner's sign-off lands: the period chip and the Sign-off card turn to Signed off, locked. With `collapse` the
+ * waiting view folds away (inside the desktop stage nothing else on the page moves); without it, it only fades.
+ */
+function landSignOff(tl: gsap.core.Timeline, scope: HTMLElement, t: number, collapse: boolean) {
+  const pending = $(scope, "[data-close-pending]");
+  const inner = $(scope, "[data-close-pending-inner]");
+  tl.to($(scope, '[data-close-status="ready"]'), { opacity: 0, duration: 0.15 }, t)
+    .fromTo($(scope, '[data-close-status="signed"]'), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, t + 0.15)
+    .fromTo(
+      pending,
+      collapse ? { opacity: 1, height: () => inner?.offsetHeight ?? 0 } : { opacity: 1 },
+      collapse ? { opacity: 0, height: 0, duration: 0.35, ease: "power2.inOut" } : { opacity: 0, duration: 0.25 },
+      t,
+    )
+    .fromTo($(scope, "[data-close-signed]"), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, t + 0.15);
+}
+
+export function closeAnimation(root: HTMLElement) {
+  const mm = gsap.matchMedia();
+
+  mm.add(MEDIA.desktop, () => {
+    revealHeading(root);
+    const stage = $(root, "[data-desktop] [data-stage]");
+    if (!stage) return;
+    const cursor = $(stage, "[data-close-cursor]")!;
+    const dialog = $(stage, "[data-close-dialog]")!;
+    const W = stage.offsetWidth;
+    const H = stage.offsetHeight;
+    const centre = (sel: string) => () => {
+      const b = offsetWithin($(stage, sel)!, stage);
+      return { x: b.x + b.w * 0.55, y: b.y + b.h * 0.55 };
+    };
+    const signOff = centre("[data-close-btn]");
+    const confirm = centre("[data-close-confirm]");
+
+    const tl = pinnedTimeline(root, "260%");
+    const t0 = fillChecklist(tl, stage, 0.3, 0.55) + 0.2;
+
+    // A partner presses Sign off, and confirms in the app's dialog
+    tl.fromTo(
+      cursor,
+      { opacity: 0, x: () => W - 80, y: () => H - 20 },
+      { opacity: 1, x: () => signOff().x, y: () => signOff().y, duration: 1.1, ease: "power2.inOut" },
+      t0,
+    )
+      .fromTo($(stage, "[data-close-btn-hover]"), { opacity: 0 }, { opacity: 1, duration: 0.15 }, t0 + 0.95)
+      .to(cursor, { scale: 0.82, duration: 0.12, transformOrigin: "10% 10%" }, t0 + 1.2)
+      .to(cursor, { scale: 1, duration: 0.15 }, t0 + 1.32)
+      .fromTo(dialog, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 }, t0 + 1.4)
+      .fromTo($(stage, "[data-close-dialog-card]"), { scale: 0.96, y: 10 }, { scale: 1, y: 0, duration: 0.35, ease: "power3.out" }, t0 + 1.4)
+      .to(cursor, { x: () => confirm().x, y: () => confirm().y, duration: 0.7, ease: "power2.inOut" }, t0 + 1.8)
+      .to(cursor, { scale: 0.82, duration: 0.12 }, t0 + 2.6)
+      .to(cursor, { scale: 1, duration: 0.15 }, t0 + 2.72)
+      .to(dialog, { autoAlpha: 0, duration: 0.25 }, t0 + 2.85);
+    landSignOff(tl, stage, t0 + 3.0, true);
+    tl.to(cursor, { opacity: 0, x: "+=40", y: "+=30", duration: 0.5 }, t0 + 3.4).to({}, { duration: 1 }, t0 + 3.9);
+  });
+
+  // Phones and tablets: no pin. The rows turn Done while the checklist scrolls through; the sign-off lands as its card
+  // arrives.
+  mm.add(MEDIA.mobile, () => {
+    revealHeading(root);
+    const scene = $(root, "[data-mobile]");
+    const list = scene ? $(scene, "[data-close-checklist]") : null;
+    const card = scene ? $(scene, "[data-close-signoff]") : null;
+    const pending = scene ? $(scene, "[data-close-pending]") : null;
+    const inner = scene ? $(scene, "[data-close-pending-inner]") : null;
+    if (!scene || !list || !card || !pending || !inner) return;
+    // Phones keep the waiting view's room while the scene plays, so the page below never moves
+    gsap.set(pending, { height: () => inner.offsetHeight });
+    const rows = gsap.timeline({
+      defaults: { ease: "none" },
+      scrollTrigger: { trigger: list, start: "top 65%", end: "bottom 55%", scrub: 0.6, invalidateOnRefresh: true },
+    });
+    fillChecklist(rows, scene, 0, 0.5);
+    const sign = gsap.timeline({
+      defaults: { ease: "none" },
+      scrollTrigger: { trigger: card, start: "top 75%", end: "top 40%", scrub: 0.6, invalidateOnRefresh: true },
+    });
+    sign.to($(scene, "[data-close-btn]"), { scale: 0.96, duration: 0.15 }, 0.2).to($(scene, "[data-close-btn]"), { scale: 1, duration: 0.15 }, 0.35);
+    landSignOff(sign, scene, 0.5, false);
+  });
+
+  return mm;
+}
+
+/* ------------------------------------------------------------------ */
+/* 4f. Where this goes: a single line before the form                   */
 /* ------------------------------------------------------------------ */
 
 export function outlookAnimation(root: HTMLElement) {

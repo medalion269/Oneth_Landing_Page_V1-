@@ -6,7 +6,7 @@
  * icons at 18px and stroke 1.75. Colours are the D41 palette the app is moving to. These are static pictures of the
  * app: nothing here links or fetches, and the landing page builds without the app's code.
  */
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   ArrowUpRight,
   Bell,
@@ -234,6 +234,7 @@ export function ListRow({
   right,
   selected = false,
   stacked = false,
+  wrap = false,
   className = "",
   ...rest
 }: {
@@ -245,6 +246,8 @@ export function ListRow({
   selected?: boolean;
   /** Narrow screens: the right-hand content moves under the title instead of squeezing it out. */
   stacked?: boolean;
+  /** Let the title wrap to as many lines as it needs (stacked rows otherwise clamp it to two). */
+  wrap?: boolean;
   className?: string;
 } & Record<`data-${string}`, unknown>) {
   const rightSlot = right !== undefined && (
@@ -262,7 +265,7 @@ export function ListRow({
     >
       {icon && <IconCircle icon={icon} tone={iconTone} />}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className={cx("text-[14px] font-semibold leading-[20px] text-ink", stacked ? "line-clamp-2" : "truncate")}>{title}</span>
+        <span className={cx("text-[14px] font-semibold leading-[20px] text-ink", wrap ? "" : stacked ? "line-clamp-2" : "truncate")}>{title}</span>
         {subtitle !== undefined && <span className="truncate text-[13px] leading-[18px] text-muted">{subtitle}</span>}
         {stacked && rightSlot}
       </span>
@@ -318,16 +321,20 @@ export function PillButton({
   variant = "primary",
   size = "md",
   className = "",
+  style,
   ...rest
 }: {
   children: ReactNode;
   variant?: "primary" | "secondary";
   size?: "sm" | "md";
   className?: string;
+  /** Inline start state for a timeline (e.g. a button that is only shown while it plays). */
+  style?: CSSProperties;
 } & Record<`data-${string}`, unknown>) {
   return (
     <span
       {...rest}
+      style={style}
       className={cx(
         "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold",
         size === "sm" ? "h-8 px-4 text-[13px]" : "h-10 px-5 text-[14px]",
