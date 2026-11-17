@@ -1,0 +1,275 @@
+/**
+ * Demonstration data for the product mockups.
+ *
+ * Every company, person and tax registration number below is fictional.
+ * Amounts are derived in code so the same invoice reads identically in the
+ * document, dashboard, reconciliation and approval scenes, and VAT is always
+ * exactly 5% of the net amount.
+ */
+
+export const VAT_RATE = 0.05;
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+export const vatOn = (net: number) => round2(net * VAT_RATE);
+/** Split a VAT-inclusive total into net and VAT (used for receipts). */
+export const splitGross = (gross: number) => {
+  const net = round2(gross / (1 + VAT_RATE));
+  return { net, vat: round2(gross - net), gross };
+};
+
+/** "3727.5" -> "3,727.50". Deterministic on server and client. */
+export function aed(n: number): string {
+  const [int, dec] = Math.abs(n).toFixed(2).split(".");
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${n < 0 ? "-" : ""}${grouped}.${dec}`;
+}
+
+/** "100234567890003" -> "100 2345 6789 0003" */
+export const formatTrn = (trn: string) => trn.replace(/^(\d{3})(\d{4})(\d{4})(\d{4})$/, "$1 $2 $3 $4");
+
+/* ------------------------------------------------------------------ */
+/* People and companies                                                 */
+/* ------------------------------------------------------------------ */
+
+export const firm = {
+  name: "Rahman & Co. Accountants",
+  initials: "RC",
+  reviewer: "Sara Malik",
+  reviewerRole: "Senior accountant",
+  reviewerInitials: "SM",
+};
+
+export const client = {
+  name: "Saffron Grove Restaurants LLC",
+  short: "Saffron Grove",
+  trn: "100987654300003",
+  contact: "Omar",
+  account: "4021",
+};
+
+/* ------------------------------------------------------------------ */
+/* The featured supplier invoice                                        */
+/* ------------------------------------------------------------------ */
+
+const invoiceLines = [
+  { description: "A4 copy paper, 80gsm, box of 5 reams", qty: 40, unitPrice: 32.5 },
+  { description: "Laser toner cartridge, black", qty: 6, unitPrice: 285 },
+  { description: "Mesh desk organiser", qty: 12, unitPrice: 45 },
+].map((l) => ({ ...l, amount: round2(l.qty * l.unitPrice) }));
+
+const invoiceNet = round2(invoiceLines.reduce((s, l) => s + l.amount, 0));
+const invoiceVat = vatOn(invoiceNet);
+
+export const invoice = {
+  supplier: "Desert Line Office Supplies LLC",
+  supplierShort: "Desert Line Office Supplies",
+  supplierAddress: "Warehouse 14, Al Quoz Industrial Area 3, Dubai",
+  supplierTrn: "100234567890003",
+  number: "INV-2026-0418",
+  file: "INV-2026-0418.pdf",
+  date: "03 Nov 2026",
+  due: "03 Dec 2026",
+  terms: "30 days",
+  lines: invoiceLines,
+  net: invoiceNet, // 3,550.00
+  vat: invoiceVat, // 177.50
+  total: round2(invoiceNet + invoiceVat), // 3,727.50
+  paidOn: "05 Nov 2026",
+};
+
+/** The journal the platform prepares from the invoice. */
+export const preparedEntry = {
+  type: "Supplier bill",
+  vatTreatment: "Standard rated, 5%",
+  lines: [
+    { code: "6120", account: "Office supplies", debit: invoice.net, credit: 0 },
+    { code: "1450", account: "Input VAT recoverable", debit: invoice.vat, credit: 0 },
+    { code: "2010", account: "Accounts payable, Desert Line", debit: 0, credit: invoice.total },
+  ],
+  preparedAt: "05 Nov 2026, 09:12",
+  approvedAt: "05 Nov 2026, 14:32",
+};
+
+/* ------------------------------------------------------------------ */
+/* Other source documents                                               */
+/* ------------------------------------------------------------------ */
+
+const receiptGross = 412.8;
+export const receipt = {
+  merchant: "FreshMart JLT",
+  location: "Cluster D, Jumeirah Lake Towers",
+  number: "88213",
+  date: "06 Nov 2026",
+  time: "18:42",
+  items: [
+    { name: "Basmati rice 10kg", amount: 168.0 },
+    { name: "Olive oil 5L x2", amount: 139.9 },
+    { name: "Cleaning supplies", amount: 104.9 },
+  ],
+  ...splitGross(receiptGross), // net 393.14, vat 19.66, gross 412.80
+};
+
+export const clientUpload = {
+  file: "Saffron_Grove_Nov_uploads.pdf",
+  pages: 12,
+  uploadedBy: "Omar, Saffron Grove",
+  uploadedAt: "07 Nov 2026",
+};
+
+/* ------------------------------------------------------------------ */
+/* Bank reconciliation                                                  */
+/* ------------------------------------------------------------------ */
+
+const facilities = 2184.35; // net 2,080.33 + VAT 104.02
+const catering = 6250.0; // net 5,952.38 + VAT 297.62
+const salesNet = 18000;
+
+export type MatchState = "matched" | "review" | "missing";
+
+export const bankTransactions = [
+  { id: "b1", date: "05 Nov", description: "TRF DESERT LINE OFFICE SUP", amount: -invoice.total, state: "matched" as MatchState },
+  { id: "b2", date: "06 Nov", description: "POS FRESHMART JLT", amount: -receipt.gross, state: "matched" as MatchState },
+  { id: "b3", date: "07 Nov", description: "INWARD TRF MARINA EVENTS FZ", amount: salesNet + vatOn(salesNet), state: "matched" as MatchState },
+  { id: "b4", date: "09 Nov", description: "TRF MARINA HEIGHTS FM", amount: -facilities, state: "matched" as MatchState },
+  { id: "b5", date: "11 Nov", description: "TRF AL MANARA CATERING", amount: -catering, state: "review" as MatchState },
+  { id: "b6", date: "12 Nov", description: "CARD 4021 BAZAAR LANE ONLINE", amount: -1149.0, state: "missing" as MatchState },
+];
+
+/** Open documents in final (aligned) order. `shuffledIndex` is where each row starts before it aligns. */
+export const openItems = [
+  { id: "d1", ref: invoice.number, party: invoice.supplierShort, kind: "Bill", amount: invoice.total, matches: "b1", shuffledIndex: 3 },
+  { id: "d2", ref: `RCPT ${receipt.number}`, party: receipt.merchant, kind: "Receipt", amount: receipt.gross, matches: "b2", shuffledIndex: 0 },
+  { id: "d3", ref: "SI-1027", party: "Marina Events FZ-LLC", kind: "Sales invoice", amount: salesNet + vatOn(salesNet), matches: "b3", shuffledIndex: 5 },
+  { id: "d4", ref: "MHF-1184", party: "Marina Heights Facilities", kind: "Bill", amount: facilities, matches: "b4", shuffledIndex: 1 },
+  { id: "d5", ref: "AMC-3391", party: "Al Manara Catering", kind: "Bill", amount: catering, matches: "b5", shuffledIndex: 4 },
+  { id: "d6", ref: "AMC-3402", party: "Al Manara Catering", kind: "Bill", amount: catering, matches: "b5", shuffledIndex: 2 },
+];
+
+export const reviewItems = [
+  {
+    id: "r1",
+    tone: "review" as const,
+    title: `AED ${aed(catering)} to Al Manara Catering`,
+    detail: "Two open bills have the same amount (AMC-3391 and AMC-3402). Choose the one this payment settles.",
+    action: "Choose bill",
+  },
+  {
+    id: "r2",
+    tone: "missing" as const,
+    title: "AED 1,149.00 card payment to Bazaar Lane Online",
+    detail: `No receipt or invoice found. A request to ${client.contact} is drafted for you to send.`,
+    action: "Review request",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Dashboard                                                            */
+/* ------------------------------------------------------------------ */
+
+export const dashboardStats = [
+  { label: "Ready for review", value: "14", note: "6 prepared today" },
+  { label: "Bank lines matched", value: "186", suffix: "/ 201", note: "15 waiting on you", progress: 186 / 201 },
+  { label: "Documents this month", value: "342", note: "Invoices, receipts, statements" },
+  { label: "Missing documents", value: "5", note: "Requests drafted for 3 clients" },
+];
+
+export type ClientStatus = "In review" | "Ready to close" | "Waiting on client" | "Closed";
+
+export const dashboardClients: {
+  name: string;
+  docs: number;
+  toReview: number;
+  reconciled: number;
+  status: ClientStatus;
+}[] = [
+  { name: client.name, docs: 48, toReview: 6, reconciled: 92, status: "In review" },
+  { name: "Marina Events FZ-LLC", docs: 31, toReview: 2, reconciled: 100, status: "Ready to close" },
+  { name: "Blue Dhow Logistics LLC", docs: 72, toReview: 4, reconciled: 78, status: "Waiting on client" },
+  { name: "Palm Crest Dental Clinic", docs: 25, toReview: 0, reconciled: 100, status: "Closed" },
+  { name: "Oasis Grid Engineering LLC", docs: 54, toReview: 2, reconciled: 85, status: "In review" },
+  { name: "Al Sufouh Interiors LLC", docs: 39, toReview: 0, reconciled: 96, status: "Ready to close" },
+];
+
+export const reviewQueue = [
+  { party: invoice.supplier, kind: "Supplier bill", amount: invoice.total, note: "Office supplies, 5% VAT", tone: "accent" as const },
+  { party: "Al Manara Catering", kind: "Bank match", amount: catering, note: "Two possible bills", tone: "warn" as const },
+  { party: receipt.merchant, kind: "Expense receipt", amount: receipt.gross, note: "Kitchen supplies, 5% VAT", tone: "accent" as const },
+  { party: "Marina Events FZ-LLC", kind: "Sales invoice", amount: salesNet + vatOn(salesNet), note: "Output VAT 900.00", tone: "accent" as const },
+  { party: "Bazaar Lane Online", kind: "Card payment", amount: 1149, note: "Missing receipt", tone: "warn" as const },
+];
+
+const outputVat = 61240;
+const inputVat = 23816.5;
+export const vatReturn = {
+  period: "Q4 2026",
+  due: "28 Jan 2027",
+  output: outputVat,
+  input: inputVat,
+  net: round2(outputVat - inputVat), // 37,423.50
+};
+
+/* ------------------------------------------------------------------ */
+/* Approval evidence                                                    */
+/* ------------------------------------------------------------------ */
+
+/** Earlier bills from the same supplier that the firm coded to 6120 (the precedent). */
+export const precedentBills = 9;
+
+export const evidence = [
+  {
+    id: "lines",
+    title: "Line items",
+    body: "Copy paper, toner cartridges and desk organisers are office consumables.",
+  },
+  {
+    id: "history",
+    title: "Your team's history",
+    body: `${precedentBills} earlier bills from this supplier were coded to 6120 Office supplies.`,
+  },
+  {
+    id: "tax",
+    title: "Tax invoice details",
+    body: `Supplier TRN and 5% VAT of AED ${aed(invoice.vat)} are shown on the invoice.`,
+  },
+  {
+    id: "bank",
+    title: "Bank payment",
+    body: `AED ${aed(invoice.total)} paid on ${invoice.paidOn} from account ending ${client.account}.`,
+  },
+];
+
+export const explanation = `The items on this bill are office consumables, and your team coded the last ${precedentBills} bills from ${invoice.supplierShort} to Office supplies. The invoice is a tax invoice with a supplier TRN and 5% VAT, so the VAT is suggested as recoverable input tax.`;
+
+/* ------------------------------------------------------------------ */
+/* Approval limits (illustration of autonomy earned over time)          */
+/* ------------------------------------------------------------------ */
+
+export type LimitHolder = "oneth" | "team" | "partner";
+export type LimitStage = 1 | 2 | 3;
+
+/** Amount bands, in AED, that a firm might use for approval limits. */
+export const limitBands = [
+  { short: "Under 1,000", long: "Under AED 1,000" },
+  { short: "1,000 to 10,000", long: "AED 1,000 to 10,000" },
+  { short: "Over 10,000", long: "Over AED 10,000" },
+];
+
+export const limitStages: { id: LimitStage; label: string; caption: string }[] = [
+  { id: 1, label: "Pilot month", caption: "Your team approves every entry and compares the work with its own." },
+  { id: 2, label: "Month 2", caption: "Partners let it match exact bank lines and code small routine costs alone." },
+  { id: 3, label: "Month 3", caption: "More routine work moves across. New, unusual and large items stay with your team." },
+];
+
+/**
+ * Example limits for a fictional firm, shown in their Month 3 state.
+ * `from` is the stage at which a partner handed that cell to the platform;
+ * before then it sat with the team. Cells without `from` never change.
+ */
+export const approvalLimits: { work: string; cells: { holder: LimitHolder; from?: LimitStage }[] }[] = [
+  { work: "Code routine expenses", cells: [{ holder: "oneth", from: 2 }, { holder: "oneth", from: 3 }, { holder: "team" }] },
+  { work: "Match exact bank lines", cells: [{ holder: "oneth", from: 2 }, { holder: "oneth", from: 2 }, { holder: "team" }] },
+  // A person always sends requests to clients; oneth only drafts them (product decision R7), so this row never moves.
+  { work: "Request a missing receipt", cells: [{ holder: "team" }, { holder: "team" }, { holder: "team" }] },
+  { work: "Standard rated VAT", cells: [{ holder: "oneth", from: 3 }, { holder: "team" }, { holder: "partner" }] },
+  { work: "New supplier or unusual item", cells: [{ holder: "team" }, { holder: "team" }, { holder: "partner" }] },
+];

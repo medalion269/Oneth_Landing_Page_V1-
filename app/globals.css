@@ -1,0 +1,331 @@
+@import "tailwindcss";
+
+/* Full cinematic experience: large screens that allow motion. Mirrors MEDIA.desktop in lib/animations.ts */
+@custom-variant motion-desktop (@media (min-width: 1024px) and (prefers-reduced-motion: no-preference));
+/* Phones and tablets with motion allowed (scroll-held mobile scenes). Mirrors MEDIA.mobile. */
+@custom-variant motion-mobile (@media (max-width: 1023.98px) and (prefers-reduced-motion: no-preference));
+
+/* Feature card "lit" state: hover on pointer devices, or the card in view in the mobile carousel */
+@custom-variant card-on {
+  &:is(.group[data-active="true"] *) {
+    @slot;
+  }
+  @media (hover: hover) {
+    &:is(.group:hover *) {
+      @slot;
+    }
+  }
+}
+
+@theme {
+  --color-canvas: #f8f7f4;
+  --color-paper: #ffffff;
+  --color-ink: #18181b;
+  --color-muted: #71717a;
+  --color-faint: #a1a1aa;
+  --color-accent: #033FFE;
+  --color-accent-soft: #e6ecff;
+  --color-accent-ink: #0232d4;
+  --color-line: #e8e7e4;
+  --color-line-soft: #f1f0ed;
+  --color-warn: #b45309;
+  --color-warn-soft: #fef3c7;
+  --color-ok: #15803d;
+  --color-ok-soft: #e7f6ec;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --shadow-soft: 0 1px 2px rgb(24 24 27 / 0.04), 0 4px 12px rgb(24 24 27 / 0.04);
+  --shadow-lift: 0 1px 2px rgb(24 24 27 / 0.04), 0 12px 32px -8px rgb(24 24 27 / 0.1), 0 32px 64px -24px rgb(24 24 27 / 0.12);
+  --shadow-float: 0 2px 6px rgb(24 24 27 / 0.04), 0 40px 90px -24px rgb(24 24 27 / 0.22), 0 24px 48px -28px rgb(24 24 27 / 0.2);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    overflow-x: clip;
+  }
+  ::selection {
+    background: rgb(3 63 254 / 0.18);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  .container-x {
+    width: 100%;
+    max-width: 1240px;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .container-x {
+      padding-inline: 2rem;
+    }
+  }
+
+  .card {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .display {
+    font-weight: 650;
+    letter-spacing: -0.045em;
+    line-height: 0.98;
+  }
+  .headline {
+    font-weight: 650;
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+    font-size: clamp(2.1rem, min(4.4vw, 6.6svh), 3.85rem);
+  }
+  .eyebrow {
+    font-size: 0.78rem;
+    font-weight: 550;
+    letter-spacing: 0.02em;
+    color: var(--color-accent-ink);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border-radius: 999px;
+    font-weight: 550;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+    transition:
+      transform 0.25s var(--ease-out-expo),
+      background-color 0.2s ease,
+      box-shadow 0.25s ease,
+      border-color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active {
+    transform: scale(0.98);
+  }
+  .btn-primary {
+    background: var(--color-ink);
+    color: #fff;
+    box-shadow: 0 1px 2px rgb(24 24 27 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+  .btn-primary:hover {
+    background: #27272a;
+    box-shadow: 0 8px 24px -8px rgb(24 24 27 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+  .btn-accent {
+    background: var(--color-accent);
+    color: #fff;
+    box-shadow: 0 1px 2px rgb(2 50 212 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+  .btn-accent:hover {
+    background: #0236e0;
+    box-shadow: 0 10px 28px -10px rgb(3 63 254 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+  .btn-ghost {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line);
+  }
+  .btn-ghost:hover {
+    border-color: #d4d3cf;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Status pill used across the product mockups */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 0.2em 0.6em;
+    font-size: 0.72em;
+    font-weight: 550;
+    line-height: 1.4;
+  }
+  .pill-accent {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-ink);
+  }
+  .pill-ok {
+    background: var(--color-ok-soft);
+    color: var(--color-ok);
+  }
+  .pill-warn {
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+  }
+  .pill-neutral {
+    background: var(--color-line-soft);
+    color: var(--color-muted);
+  }
+
+  /* Stack children on top of each other (badge cross-fades) */
+  .stack {
+    display: inline-grid;
+  }
+  .stack > * {
+    grid-area: 1 / 1;
+  }
+
+  /* Field highlight used on source documents */
+  .hl {
+    position: relative;
+    z-index: 0;
+  }
+  .hl > .hl-box {
+    position: absolute;
+    inset: -3px -5px;
+    z-index: -1;
+    border-radius: 5px;
+    background: rgb(3 63 254 / 0.09);
+    box-shadow: inset 0 0 0 1.25px rgb(3 63 254 / 0.65);
+    transform-origin: left center;
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, rgb(24 24 27 / 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(24 24 27 / 0.035) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Load-time entrance (pure CSS, so it never depends on hydration)     */
+/* ------------------------------------------------------------------ */
+@keyframes word-up {
+  from {
+    transform: translate3d(0, 108%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes nav-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes dash-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 160px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(3 63 254 / 0.45);
+  }
+  60% {
+    box-shadow: 0 0 0 6px rgb(3 63 254 / 0);
+  }
+}
+
+.word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.word-mask > span {
+  display: inline-block;
+}
+.live-dot {
+  animation: pulse-dot 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .word-mask > span {
+    animation: word-up 1.15s var(--ease-out-expo) both;
+    animation-delay: calc(var(--i, 0) * 70ms + 150ms);
+  }
+  .anim-rise {
+    animation: rise 1s var(--ease-out-expo) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .anim-nav {
+    animation: nav-in 0.9s var(--ease-out-expo) both 0.05s;
+  }
+  .hero-dash-enter {
+    animation: dash-rise 1.6s var(--ease-out-expo) both 0.6s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Hero dashboard: initial cinematic pose (desktop + motion only).    */
+/* GSAP takes over from exactly these values (see lib/animations.ts). */
+/* ------------------------------------------------------------------ */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .hero-dash-stage {
+    position: absolute;
+    inset: 0;
+    perspective: 2000px;
+    perspective-origin: 50% 0%;
+    pointer-events: none;
+  }
+  .hero-dash {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100svh;
+    transform-origin: 50% 0%;
+    transform: translate3d(0, max(67svh, 560px), 0) rotateX(14deg) scale(0.76);
+  }
+}
