@@ -419,19 +419,24 @@ export function GuideOverlay({ guide, frameRef }: { guide: Guide; frameRef: RefO
 export function GuideInvite({ guide }: { guide: Guide }) {
   if (guide.status !== "invited") return null;
   return (
-    <section data-guide-ui aria-label="Try the app" className="guide-invite absolute bottom-5 right-5 z-40 flex w-[340px] flex-col gap-2 rounded-[20px] bg-paper p-5 text-ink shadow-float">
-      <span className="text-[12px] font-semibold text-accent-ink">Try it</span>
+    // Brand-blue gradient so the invitation stands out against the white app it sits on
+    <section
+      data-guide-ui
+      aria-label="Try the app"
+      className="guide-invite absolute bottom-5 right-5 z-40 flex w-[340px] flex-col gap-2 rounded-[20px] bg-[radial-gradient(120%_90%_at_100%_0%,rgb(255_255_255/0.16),transparent_55%),linear-gradient(135deg,var(--color-accent),var(--color-accent-ink))] p-5 text-white shadow-[0_2px_6px_rgb(3_63_254/0.2),0_28px_64px_-20px_rgb(3_63_254/0.6)] ring-1 ring-white/10"
+    >
+      <span className="w-fit rounded-full bg-white/15 px-2.5 py-0.5 text-[12px] font-semibold leading-[18px] text-white">Try it</span>
       <p className="text-[17px] font-semibold leading-[24px]">Clear Saffron Grove&apos;s to-do list</p>
-      <p className="text-[14px] leading-[20px] text-muted">3 tasks, about a minute. oneth prepares, you decide.</p>
+      <p className="text-[14px] leading-[20px] text-white/85">3 tasks, about a minute. oneth prepares, you decide.</p>
       <span className="mt-2 flex items-center gap-2">
         <button
           type="button"
           onClick={guide.start}
-          className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-ink px-5 text-[14px] font-semibold text-white outline-none hover:bg-ink/85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-paper px-5 text-[14px] font-semibold text-accent-ink outline-none hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent"
         >
           Start <ArrowRight {...ICON_SM} />
         </button>
-        <button type="button" onClick={guide.dismiss} className="cursor-pointer rounded-full px-3 py-2 text-[14px] font-semibold text-muted outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent">
+        <button type="button" onClick={guide.dismiss} className="cursor-pointer rounded-full px-3 py-2 text-[14px] font-semibold text-white/80 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-white">
           No thanks
         </button>
       </span>
