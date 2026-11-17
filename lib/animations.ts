@@ -168,7 +168,12 @@ export function navbarAnimation(nav: HTMLElement) {
 /* 1. Hero: the app rises, becomes the screen and can be clicked       */
 /* ------------------------------------------------------------------ */
 
-export function heroAnimation(root: HTMLElement) {
+/**
+ * `spacer` is the hero's own wrapper element, used as the pin-spacer. Without it ScrollTrigger wraps the section in a
+ * new element after hydration and moves it in and out of that wrapper on every refresh; each move restarts the
+ * section's CSS entrance animations, so the headline visibly played twice.
+ */
+export function heroAnimation(root: HTMLElement, spacer?: HTMLElement | null) {
   const mm = gsap.matchMedia();
 
   mm.add(MEDIA.desktop, () => {
@@ -223,7 +228,11 @@ export function heroAnimation(root: HTMLElement) {
       }
     };
 
-    const tl = (made.tl = pinnedTimeline(root, "240%", { onToggle: sync, onUpdate: watchArrival }));
+    const tl = (made.tl = pinnedTimeline(root, "240%", {
+      onToggle: sync,
+      onUpdate: watchArrival,
+      ...(spacer ? { pinSpacer: spacer } : {}),
+    }));
     tl.eventCallback("onUpdate", sync);
     tl.fromTo(
       dash,
