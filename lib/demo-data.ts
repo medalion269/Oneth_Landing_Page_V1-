@@ -163,50 +163,68 @@ export const reviewItems = [
 ];
 
 /* ------------------------------------------------------------------ */
-/* Dashboard                                                            */
+/* The app's Overview (hero), with the fictional firm above             */
 /* ------------------------------------------------------------------ */
 
-export const dashboardStats = [
-  { label: "Ready for review", value: "14", note: "6 prepared today" },
-  { label: "Bank lines matched", value: "186", suffix: "/ 201", note: "15 waiting on you", progress: 186 / 201 },
-  { label: "Documents this month", value: "342", note: "Invoices, receipts, statements" },
-  { label: "Missing documents", value: "5", note: "Requests drafted for 3 clients" },
-];
+export type DecisionKind = "classification" | "bank_match" | "vat_treatment" | "missing_evidence";
+export type DecisionState = "escalated" | "awaiting_review" | "approved" | "overturned";
 
-export type ClientStatus = "In review" | "Ready to close" | "Waiting on client" | "Closed";
-
-export const dashboardClients: {
-  name: string;
-  docs: number;
-  toReview: number;
-  reconciled: number;
-  status: ClientStatus;
-}[] = [
-  { name: client.name, docs: 48, toReview: 6, reconciled: 92, status: "In review" },
-  { name: "Marina Events FZ-LLC", docs: 31, toReview: 2, reconciled: 100, status: "Ready to close" },
-  { name: "Blue Dhow Logistics LLC", docs: 72, toReview: 4, reconciled: 78, status: "Waiting on client" },
-  { name: "Palm Crest Dental Clinic", docs: 25, toReview: 0, reconciled: 100, status: "Closed" },
-  { name: "Oasis Grid Engineering LLC", docs: 54, toReview: 2, reconciled: 85, status: "In review" },
-  { name: "Al Sufouh Interiors LLC", docs: 39, toReview: 0, reconciled: 96, status: "Ready to close" },
-];
-
-export const reviewQueue = [
-  { party: invoice.supplier, kind: "Supplier bill", amount: invoice.total, note: "Office supplies, 5% VAT", tone: "accent" as const },
-  { party: "Al Manara Catering", kind: "Bank match", amount: catering, note: "Two possible bills", tone: "warn" as const },
-  { party: receipt.merchant, kind: "Expense receipt", amount: receipt.gross, note: "Kitchen supplies, 5% VAT", tone: "accent" as const },
-  { party: "Marina Events FZ-LLC", kind: "Sales invoice", amount: salesNet + vatOn(salesNet), note: "Output VAT 900.00", tone: "accent" as const },
-  { party: "Bazaar Lane Online", kind: "Card payment", amount: 1149, note: "Missing receipt", tone: "warn" as const },
-];
-
-const outputVat = 61240;
-const inputVat = 23816.5;
-export const vatReturn = {
-  period: "Q4 2026",
-  due: "28 Jan 2027",
-  output: outputVat,
-  input: inputVat,
-  net: round2(outputVat - inputVat), // 37,423.50
+export const DECISION_STATE_LABEL: Record<DecisionState, string> = {
+  escalated: "Escalated",
+  awaiting_review: "Awaiting review",
+  approved: "Approved",
+  overturned: "Overturned",
 };
+
+/** "Today" on the Overview: what oneth did and what waits for people. */
+export const overviewToday = {
+  tasksDone: 9,
+  tasksRunning: 2,
+  awaitingReview: 14,
+  autoDecided: 0.38,
+  overturnRate: 0.06,
+};
+
+/** "Needs you": escalations first, then what waits longest. Amounts reuse the scenes below. */
+export const needsYou: { kind: DecisionKind; state: DecisionState; issue: string; client: string; amount: number; confidence: number }[] = [
+  { kind: "bank_match", state: "escalated", issue: `Two open bills match AED ${aed(catering)} to Al Manara Catering`, client: client.name, amount: catering, confidence: 0.52 },
+  { kind: "missing_evidence", state: "escalated", issue: "No receipt for card payment at Bazaar Lane Online", client: client.name, amount: 1149, confidence: 0.41 },
+  { kind: "classification", state: "awaiting_review", issue: `Classify ${invoice.supplierShort} invoice ${invoice.number}`, client: client.name, amount: invoice.total, confidence: 0.94 },
+  { kind: "vat_treatment", state: "awaiting_review", issue: `VAT treatment for ${receipt.merchant} receipt ${receipt.number}`, client: client.name, amount: receipt.gross, confidence: 0.88 },
+  { kind: "classification", state: "awaiting_review", issue: "Record sales invoice SI-1027", client: "Marina Events FZ-LLC", amount: salesNet + vatOn(salesNet), confidence: 0.91 },
+];
+
+/** oneth's daily briefing: short sentences, like an assistant message. */
+export const briefing = [
+  "I finished 9 tasks today and am working on 2 more.",
+  `2 decisions escalated and 14 waiting for review. Start with ${client.name}: two open bills match AED ${aed(catering)} to Al Manara Catering.`,
+  "3 periods are ready for sign-off: Marina Events FZ-LLC, Al Sufouh Interiors LLC and Palm Crest Dental Clinic.",
+  "October VAT returns for 4 clients are due in 11 days (28 Nov 2026).",
+];
+
+/** "Decisions this week": per day, decided within permissions (auto) and reviewed by people. */
+export const decisionsByDay = [
+  { day: "Wed", auto: 3, reviewed: 4 },
+  { day: "Thu", auto: 4, reviewed: 2 },
+  { day: "Fri", auto: 2, reviewed: 3 },
+  { day: "Sat", auto: 1, reviewed: 1 },
+  { day: "Sun", auto: 4, reviewed: 3 },
+  { day: "Mon", auto: 5, reviewed: 4 },
+  { day: "Tue", auto: 3, reviewed: 2 },
+];
+
+export const readyForSignoff = [
+  { client: "Marina Events FZ-LLC", month: "Oct 2026" },
+  { client: "Al Sufouh Interiors LLC", month: "Oct 2026" },
+  { client: "Palm Crest Dental Clinic", month: "Oct 2026" },
+];
+
+export const vatDeadlines = [
+  { client: client.name, due: "28 Nov 2026", daysLeft: 11 },
+  { client: "Blue Dhow Logistics LLC", due: "28 Nov 2026", daysLeft: 11 },
+  { client: "Oasis Grid Engineering LLC", due: "28 Nov 2026", daysLeft: 11 },
+  { client: "Marina Events FZ-LLC", due: "28 Nov 2026", daysLeft: 11 },
+];
 
 /* ------------------------------------------------------------------ */
 /* Approval evidence                                                    */

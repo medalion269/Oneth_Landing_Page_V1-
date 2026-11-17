@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
+// The oneth app's font, used only inside the product mockups (its two weights, DESIGN.md).
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"], weight: ["400", "600"], display: "swap" });
 
 const description =
   "oneth handles repetitive bookkeeping work for accounting and bookkeeping firms in the UAE. Your team reviews and approves every entry. Apply for a free pilot.";
@@ -31,7 +33,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${inter.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

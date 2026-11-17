@@ -88,7 +88,7 @@ export default function Hero() {
           <div
             className="hero-dash-enter h-full"
             role="img"
-            aria-label="oneth dashboard for November 2026: 14 entries ready for review, 186 of 201 bank lines matched, client progress and the Q4 VAT return."
+            aria-label="The oneth app's Overview in shadow mode: 9 tasks completed today, 14 decisions awaiting review, two escalations that need a person, the daily briefing, decisions this week, three periods ready for sign-off and upcoming VAT deadlines."
           >
             <AccountingDashboard variant="full" />
           </div>
@@ -98,7 +98,7 @@ export default function Hero() {
       {/* Mobile and tablet: compact, readable product UI */}
       <div className="container-x relative pb-20 lg:hidden">
         <div data-hero-compact className="mx-auto max-w-xl">
-          <div className="hero-dash-enter" role="img" aria-label="oneth dashboard summary: 14 entries ready for review and 186 of 201 bank lines matched.">
+          <div className="hero-dash-enter" role="img" aria-label="The oneth app's Overview: 9 tasks completed today, 14 decisions awaiting review and the decisions that need a person.">
             <AccountingDashboard variant="compact" />
           </div>
         </div>

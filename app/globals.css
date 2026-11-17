@@ -41,6 +41,16 @@
   --shadow-float: 0 2px 6px rgb(24 24 27 / 0.04), 0 40px 90px -24px rgb(24 24 27 / 0.22), 0 24px 48px -28px rgb(24 24 27 / 0.2);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* The oneth app's look, for the product mockups only (frontend/src/styles/tokens.css and docs/DESIGN.md,
+     in the D41 palette). Its other colours are the tokens above: page = canvas, card = paper, tile = line-soft,
+     secondary text = muted, muted = faint, hairline = line, done = ok, review = warn, in progress = accent. */
+  --font-app: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --color-blocked: #b91c1c;
+  --color-blocked-soft: #fee2e2;
+  --radius-app-card: 24px;
+  --radius-app-tile: 14px;
+  --shadow-app: 0 1px 2px rgb(0 0 0 / 0.04);
 }
 
 @layer base {
