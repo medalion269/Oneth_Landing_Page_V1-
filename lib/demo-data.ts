@@ -299,3 +299,32 @@ export const permissions: {
   { action: "post_entries", label: "Post entries", detail: "oneth never writes to an accounting system: off or propose only.", mode: "propose" },
   { action: "submit_tax_return", label: "Submit tax returns", detail: "Tax filing is never automated.", mode: "off", locked: true },
 ];
+
+/* ------------------------------------------------------------------ */
+/* Knowledge: precedents, and the next bill that cites one              */
+/* ------------------------------------------------------------------ */
+
+/** The precedent saved when INV-2026-0418 was approved in Review, and older ones (the app's Precedents list). */
+export const newPrecedent = {
+  pattern: `${invoice.supplierShort} invoices`,
+  summary: `Coded to ${preparedEntry.lines[0].code} ${preparedEntry.lines[0].account}, input VAT recoverable`,
+  date: "05 Nov 2026",
+  scope: "One client",
+};
+
+export const olderPrecedents = [
+  { pattern: "Marina Heights Facilities bills", summary: "Coded to 6310 Facilities, input VAT recoverable", date: "21 Oct 2026", scope: "One client", used: 6 },
+  { pattern: `${receipt.merchant} receipts`, summary: "Coded to 5110 Kitchen supplies, input VAT recoverable", date: "14 Oct 2026", scope: "One client", used: 11 },
+  { pattern: "Bank charges under AED 50", summary: "Coded to 6810 Bank charges, no VAT", date: "30 Sep 2026", scope: "Firm-wide", used: 23 },
+];
+
+const nextNet = 1220;
+/** The next bill from the same supplier: oneth proposes it citing the new precedent. VAT derived, as everywhere. */
+export const nextInvoice = {
+  number: "INV-2026-0441",
+  date: "19 Nov 2026",
+  net: nextNet,
+  vat: vatOn(nextNet), // 61.00
+  total: round2(nextNet + vatOn(nextNet)), // 1,281.00
+  confidence: 0.97,
+};
