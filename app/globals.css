@@ -344,7 +344,7 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Client portal: the phone camera's view of a thermal receipt on a     */
+/* Client portal: the phone camera's view of a tax invoice on a       */
 /* countertop (desktop scene only). Pictures, not UI, so raw colours.  */
 /* ------------------------------------------------------------------ */
 .cam-surface {
@@ -355,26 +355,11 @@
 .cam-vignette {
   background: radial-gradient(ellipse 75% 70% at 50% 46%, transparent 55%, rgb(0 0 0 / 0.55) 100%);
 }
-/* Thermal paper: off-white, darker at the curled edges, with the crease where it was folded in the bag */
-.receipt-paper {
-  color: rgb(30 30 32 / 0.84);
+/* A4 paper lit from the top left, with the two creases from being folded in three for the parcel */
+.invoice-paper {
   background:
-    linear-gradient(90deg, rgb(0 0 0 / 0.09), transparent 12%, transparent 84%, rgb(0 0 0 / 0.11)),
-    linear-gradient(180deg, transparent 46%, rgb(0 0 0 / 0.06) 49%, rgb(255 255 255 / 0.5) 50.5%, transparent 54%),
-    linear-gradient(180deg, #fbfaf6, #f1efe8);
-}
-.receipt-barcode {
-  background: repeating-linear-gradient(
-    90deg,
-    currentColor 0 1px,
-    transparent 1px 2px,
-    currentColor 2px 5px,
-    transparent 5px 6px,
-    currentColor 6px 7px,
-    transparent 7px 9px,
-    currentColor 9px 11px,
-    transparent 11px 12px,
-    currentColor 12px 13px,
-    transparent 13px 15px
-  );
+    linear-gradient(180deg, transparent 32.4%, rgb(0 0 0 / 0.07) 33.1%, rgb(255 255 255 / 0.6) 33.6%, transparent 34.6%),
+    linear-gradient(180deg, transparent 65.8%, rgb(0 0 0 / 0.06) 66.5%, rgb(255 255 255 / 0.55) 67%, transparent 68%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.05), transparent 8%, transparent 90%, rgb(0 0 0 / 0.07)),
+    linear-gradient(160deg, #ffffff 0%, #f8f7f3 55%, #eeece6 100%);
 }

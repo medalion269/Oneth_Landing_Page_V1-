@@ -7,13 +7,13 @@ import SectionHeading from "./SectionHeading";
 import Stage from "./Stage";
 import { AppCard, AppRail, AppTopBar, Chip, ICON, ListRow, PillButton } from "./app/ui";
 import { portalAnimation, useGSAP } from "@/lib/animations";
-import { aed, bazaarReceipt, client, firm, formatTrn, openRequest, portalQuestion } from "@/lib/demo-data";
+import { aed, bazaarInvoice, client, firm, formatTrn, openRequest, portalQuestion } from "@/lib/demo-data";
 
 /*
  * Client portal, "answer and snap". Left: the client's phone, on the portal the firm sends them to
  * (frontend/src/portal: the firm's name and colour, three big tabs, the Questions tab's question card). Right: the firm's
  * own view, the client's Communications tab (frontend/src/app/clients/RequestTabs.tsx). The client answers, attaches a
- * photo of the receipt and sends; the request turns Answered, and the conversation gains the reply and oneth's new
+ * photo of the supplier's invoice and sends; the request turns Answered, and the conversation gains the reply and oneth's new
  * proposal (pipeline/client_requests.propose_settlement). Markup is the finished state.
  */
 
@@ -61,7 +61,7 @@ function QuestionCard() {
               </PillButton>
               <span data-pt-attached className="flex items-center justify-between gap-2 rounded-app-tile bg-paper px-4 py-3 text-[13px]">
                 <span className="flex min-w-0 items-center gap-2 truncate">
-                  <ReceiptThumb />
+                  <InvoiceThumb />
                   Attached: {q.photo}
                 </span>
                 <span className="font-semibold text-muted">Remove</span>
@@ -89,15 +89,19 @@ function QuestionCard() {
   );
 }
 
-/** A thumbnail of the photo just taken (the receipt on the countertop), beside the attachment's name. */
-function ReceiptThumb() {
+/** A thumbnail of the photo just taken (the invoice on the countertop), beside the attachment's name. */
+function InvoiceThumb() {
   return (
     <span aria-hidden className="cam-surface relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[4px]">
-      <span className="receipt-paper flex h-[22px] w-[11px] -rotate-6 flex-col gap-[2px] px-[2px] pt-[3px] shadow-[0_2px_3px_rgb(0_0_0/0.35)]">
-        <span className="h-px w-full bg-current opacity-50" />
-        <span className="h-px w-2/3 bg-current opacity-40" />
-        <span className="h-px w-full bg-current opacity-40" />
-        <span className="mt-auto mb-[3px] h-[3px] w-full bg-current opacity-60" />
+      <span className="invoice-paper flex h-[22px] w-[16px] -rotate-3 flex-col gap-[2px] px-[2px] pt-[3px] text-ink shadow-[0_2px_3px_rgb(0_0_0/0.35)]">
+        <span className="flex justify-between">
+          <span className="size-[3px] rounded-[1px] bg-[#b4532a]" />
+          <span className="h-[2px] w-[5px] bg-current opacity-60" />
+        </span>
+        <span className="h-px w-2/3 bg-current opacity-35" />
+        <span className="h-[3px] w-full bg-current opacity-15" />
+        <span className="h-px w-full bg-current opacity-35" />
+        <span className="ml-auto h-px w-1/2 bg-current opacity-60" />
       </span>
     </span>
   );
@@ -138,64 +142,108 @@ function Portal({ phone = false }: { phone?: boolean }) {
   );
 }
 
-/** A till roll's torn ends: a zigzag along the top and bottom edges, as a clip-path. */
-const TORN = (() => {
-  const teeth = 26;
-  const depth = 2.5;
-  const x = (i: number) => `${((i / teeth) * 100).toFixed(2)}%`;
-  const top = Array.from({ length: teeth + 1 }, (_, i) => `${x(i)} ${i % 2 ? depth : 0}px`);
-  const bottom = Array.from({ length: teeth + 1 }, (_, i) => teeth - i).map((k) => `${x(k)} calc(100% - ${k % 2 ? depth : 0}px)`);
-  return `polygon(${[...top, ...bottom].join(", ")})`;
-})();
+const INVOICE_COLS = "grid grid-cols-[minmax(0,1fr)_12px_30px_34px_26px_36px] gap-x-[4px]";
 
-function ReceiptRule() {
-  return <span className="my-[3px] border-t border-dashed border-current opacity-35" />;
-}
-
-function ReceiptRow({ left, right, className = "" }: { left: string; right: string; className?: string }) {
+/**
+ * The supplier's A4 tax invoice, as printed: letterhead with TRN, invoice details, bill-to with the client's TRN, the
+ * lines (prices include VAT, so each shows its taxable amount and VAT), totals, how it was paid, and the footer.
+ */
+function InvoicePage() {
+  const v = bazaarInvoice;
   return (
-    <span className={`flex justify-between gap-2 ${className}`}>
-      <span>{left}</span>
-      <span className="tabular-nums">{right}</span>
-    </span>
-  );
-}
-
-/** The shop's thermal tax invoice, as printed: header with TRN, the line, totals with VAT, the card slip, a barcode. */
-function Receipt() {
-  const r = bazaarReceipt;
-  return (
-    <div className="receipt-paper flex w-[160px] flex-col gap-[2px] px-3 pb-5 pt-5 font-mono text-[7.5px] leading-[10px]" style={{ clipPath: TORN }}>
-      <span className="text-center text-[12px] font-bold leading-[14px] tracking-[0.14em]">{r.merchant}</span>
-      <span className="text-center">{r.tagline}</span>
-      <span className="text-center">{r.address}</span>
-      <span className="text-center">TRN {r.trn}</span>
-      <ReceiptRule />
-      <span className="text-center text-[9px] font-bold tracking-[0.22em]">TAX INVOICE</span>
-      <ReceiptRow left="Invoice" right={r.number} />
-      <ReceiptRow left={r.date} right={r.time} />
-      <ReceiptRule />
-      <span className="uppercase">{r.item}</span>
-      <ReceiptRow left={`  ${r.qty} x ${aed(r.unit)}`} right={aed(r.gross)} />
-      <span className="text-[6.5px] opacity-70">SKU {r.sku} · prices incl. VAT</span>
-      <ReceiptRule />
-      <ReceiptRow left="TOTAL AED" right={aed(r.gross)} className="text-[9.5px] font-bold leading-[13px]" />
-      <ReceiptRow left="Amount excl. VAT" right={aed(r.net)} />
-      <ReceiptRow left="VAT 5%" right={aed(r.vat)} />
-      <ReceiptRule />
-      <ReceiptRow left={`CARD ****${r.card}`} right={aed(r.gross)} />
-      <ReceiptRow left="APPROVED" right={`AUTH ${r.auth}`} />
-      <ReceiptRule />
-      <span className="text-center">Thank you for shopping with us</span>
-      <span className="receipt-barcode mx-auto mt-1.5 h-6 w-[112px]" />
-      <span className="text-center text-[6.5px] tracking-[0.18em]">{r.number}</span>
+    <div className="invoice-paper flex h-[330px] w-[234px] flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px] font-sans text-[5.5px] leading-[7.5px] text-ink">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-[5px]">
+          <span className="flex size-[17px] items-center justify-center rounded-[4px] bg-[#b4532a] text-[6.5px] font-bold text-white">BL</span>
+          <span className="flex flex-col">
+            <span className="text-[9px] font-semibold leading-[10px] tracking-[-0.01em]">{v.brand}</span>
+            <span className="text-muted">{v.tagline}</span>
+          </span>
+        </div>
+        <span className="flex flex-col items-end">
+          <span className="text-[10px] font-bold leading-[12px] tracking-[0.05em]">TAX INVOICE</span>
+          <span className="text-muted">{v.number}</span>
+        </span>
+      </div>
+      <div className="flex justify-between gap-2 text-muted">
+        <span className="flex flex-col">
+          <span className="font-semibold text-ink">{v.supplier}</span>
+          {v.address.map((l) => (
+            <span key={l}>{l}</span>
+          ))}
+          <span>TRN {formatTrn(v.trn)}</span>
+        </span>
+        <span className="flex flex-col items-end">
+          <span>Invoice date: {v.date}</span>
+          <span>Supply date: {v.date}</span>
+          <span>{v.order}</span>
+        </span>
+      </div>
+      <div className="flex justify-between gap-2 rounded-[2px] bg-line-soft px-[6px] py-[5px] text-muted">
+        <span className="flex flex-col">
+          <span className="font-semibold text-ink">Bill to</span>
+          <span>{client.name}</span>
+          <span>TRN {formatTrn(client.trn)}</span>
+        </span>
+        <span className="flex flex-col items-end">
+          <span className="font-semibold text-ink">Deliver to</span>
+          <span>{v.deliverTo}</span>
+          <span>Dubai Marina, Dubai</span>
+        </span>
+      </div>
+      <div className="flex flex-col">
+        <div className={`${INVOICE_COLS} border-b border-ink/70 pb-[3px] font-semibold`}>
+          <span>Description</span>
+          <span className="text-right">Qty</span>
+          <span className="text-right">Unit price</span>
+          <span className="text-right">Taxable</span>
+          <span className="text-right">VAT 5%</span>
+          <span className="text-right">Amount</span>
+        </div>
+        {v.lines.map((l) => (
+          <div key={l.sku} className={`${INVOICE_COLS} border-b border-line py-[3px] tabular-nums`}>
+            <span className="flex flex-col">
+              <span>{l.item}</span>
+              <span className="text-muted">SKU {l.sku}</span>
+            </span>
+            <span className="text-right">{l.qty}</span>
+            <span className="text-right">{aed(l.unit)}</span>
+            <span className="text-right">{aed(l.net)}</span>
+            <span className="text-right">{aed(l.vat)}</span>
+            <span className="text-right">{aed(l.gross)}</span>
+          </div>
+        ))}
+        <span className="pt-[2px] text-muted">Unit prices include VAT at 5%.</span>
+      </div>
+      <div className="ml-auto flex w-[112px] flex-col gap-[1px] tabular-nums">
+        <span className="flex justify-between">
+          <span className="text-muted">Total taxable amount</span>
+          <span>{aed(v.net)}</span>
+        </span>
+        <span className="flex justify-between">
+          <span className="text-muted">Total VAT (5%)</span>
+          <span>{aed(v.vat)}</span>
+        </span>
+        <span className="mt-[2px] flex justify-between border-t border-ink/70 pt-[3px] text-[7px] font-bold leading-[9px]">
+          <span>Total AED</span>
+          <span>{aed(v.gross)}</span>
+        </span>
+        <span className="flex justify-between text-muted">
+          <span>Paid, card ending {v.card}</span>
+          <span>{aed(v.gross)}</span>
+        </span>
+      </div>
+      <div className="mt-auto flex flex-col gap-[1px] border-t border-line pt-[4px] text-center text-muted">
+        <span>Thank you for your order.</span>
+        <span>This is a computer-generated tax invoice and needs no signature.</span>
+      </div>
     </div>
   );
 }
 
 /**
- * The phone's camera, shown only while the timeline plays: the receipt lying on a countertop in the viewfinder, a focus
- * box, then the shutter. The photo is drawn in CSS (paper, torn ends, curl and crease, grain, vignette).
+ * The phone's camera, shown only while the timeline plays: the invoice lying on a countertop in the viewfinder, a focus
+ * box, then the shutter. The photo is drawn in CSS (paper with its folds, shadow, grain, vignette).
  */
 function Camera() {
   return (
@@ -215,11 +263,11 @@ function Camera() {
         <div
           className="absolute left-1/2 top-1/2"
           style={{
-            transform: "translate(-50%, -50%) perspective(700px) rotateX(14deg) rotate(-5deg)",
-            filter: "drop-shadow(0 16px 14px rgb(0 0 0 / 0.42)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.3))",
+            transform: "translate(-50%, -50%) perspective(800px) rotateX(12deg) rotate(-3deg)",
+            filter: "drop-shadow(0 14px 14px rgb(0 0 0 / 0.4)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.28))",
           }}
         >
-          <Receipt />
+          <InvoicePage />
         </div>
         <div className="cam-vignette absolute inset-0" />
         {/* Tap-to-focus box */}
@@ -402,7 +450,7 @@ function DesktopScene() {
     <Stage
       width={1200}
       height={600}
-      label={`Left, the client's phone: the client portal under ${firm.name}'s name. The accountant asked "${q.message}" about a card payment of AED ${aed(q.line.amount)} at Bazaar Lane Online on ${q.line.date}. The client types "${q.answer}", photographs the receipt and sends. Right, the firm's view in oneth, the client's Communications tab: the question turns Answered, the reply arrives with the photo, and oneth proposes settling the payment against the receipt, for a person to review.`}
+      label={`Left, the client's phone: the client portal under ${firm.name}'s name. The accountant asked "${q.message}" about a card payment of AED ${aed(q.line.amount)} at Bazaar Lane Online on ${q.line.date}. The client types "${q.answer}", photographs the supplier's tax invoice and sends. Right, the firm's view in oneth, the client's Communications tab: the question turns Answered, the reply arrives with the photo, and oneth proposes settling the payment against the invoice, for a person to review.`}
     >
       <Phone />
       <FirmApp />
@@ -441,7 +489,7 @@ export default function PortalScene() {
   return (
     <section ref={root} id="portal" aria-labelledby="portal-title" className="relative py-24 sm:py-28 lg:flex lg:h-svh lg:flex-col lg:pb-5 lg:pt-20">
       <SectionHeading id="portal-title" eyebrow="Client portal" title="Your client answers from their phone." className="container-x" pinned>
-        Your team&apos;s question reaches the client in a portal under your firm&apos;s name. They reply with a photo of the receipt, and{" "}
+        Your team&apos;s question reaches the client in a portal under your firm&apos;s name. They reply with a photo of the invoice, and{" "}
         <Brand className="font-medium text-ink" /> proposes how to settle the payment.
       </SectionHeading>
       <div data-desktop className="container-x mt-6 hidden min-h-0 flex-1 lg:block">

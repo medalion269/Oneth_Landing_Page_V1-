@@ -335,7 +335,7 @@ export const nextInvoice = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Client portal: the client answers a question and sends the receipt  */
+/* Client portal: the client answers a question and sends the invoice  */
 /* ------------------------------------------------------------------ */
 
 const missingLine = bankTransactions.find((t) => t.state === "missing")!;
@@ -346,11 +346,11 @@ const missingLine = bankTransactions.find((t) => t.state === "missing")!;
  * with a photo; oneth reads it and proposes settling the line against it (pipeline/client_requests.propose_settlement).
  */
 export const portalQuestion = {
-  message: "What was this card payment for? Please send us the receipt.",
+  message: "What was this card payment for? Please send us the invoice.",
   line: { description: missingLine.description, date: "12 Nov 2026", amount: -missingLine.amount },
   /** The request's title in the firm app, as ask_client() writes it. */
   title: `A payment of AED ${aed(-missingLine.amount)} on 12 Nov 2026`,
-  answer: "Folding chairs for the Marina branch terrace. Receipt attached.",
+  answer: "Folding chairs for the Marina branch terrace. Invoice attached.",
   photo: "IMG_4417.jpg",
   askedAt: "13 Nov 2026, 09:40",
   answeredAt: "14 Nov 2026, 18:22",
@@ -359,24 +359,26 @@ export const portalQuestion = {
 
 const chairs = 6;
 /**
- * The receipt the client photographs: the shop's thermal tax invoice for the chairs, paid by the card on the bank line.
- * Shelf prices include VAT, as on most UAE till receipts: 6 × 191.50 = 1,149.00, of which VAT is 54.71.
+ * The invoice the client photographs: the online shop's A4 tax invoice that came folded in the parcel, paid by the card
+ * on the bank line. The shop prices include VAT, so each line shows the taxable amount and the VAT backed out of it:
+ * 6 × 191.50 = 1,149.00, of which 1,094.29 is taxable and 54.71 is VAT (5% of 1,094.29, rounded).
  */
-export const bazaarReceipt = {
-  merchant: "BAZAAR LANE",
+export const bazaarInvoice = {
+  brand: "Bazaar Lane",
   tagline: "Home & Outdoor",
-  address: "Unit 12, Al Quoz Industrial 2, Dubai",
+  supplier: "Bazaar Lane Trading LLC",
+  address: ["Unit 12, Al Quoz Industrial Area 2", "Dubai, United Arab Emirates"],
   trn: "100452177890003",
-  number: "BL-261112-0873",
-  date: "12/11/2026",
-  time: "16:42",
-  item: "Folding chair, teak",
-  sku: "40118",
-  qty: chairs,
-  unit: round2(-missingLine.amount / chairs), // 191.50
+  number: "BL-INV-2611-0873",
+  date: "12 Nov 2026",
+  order: "Order BL-58204",
+  deliverTo: "Saffron Grove, Marina branch",
+  lines: [
+    { item: "Folding chair, teak finish", sku: "40118", qty: chairs, unit: round2(-missingLine.amount / chairs), ...splitGross(-missingLine.amount) },
+    { item: "Standard delivery, Dubai", sku: "DLV", qty: 1, unit: 0, net: 0, vat: 0, gross: 0 },
+  ],
   ...splitGross(-missingLine.amount), // net 1,094.29, vat 54.71, gross 1,149.00
   card: client.account,
-  auth: "482910",
 };
 
 /** Another open request in the client's Communications tab: nothing uploaded yet, so it is still Waiting. */

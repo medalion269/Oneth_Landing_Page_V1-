@@ -795,7 +795,7 @@ export function limitsAnimation(root: HTMLElement) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4d. Client portal: the client answers and snaps the receipt          */
+/* 4d. Client portal: the client answers and snaps the invoice          */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -885,10 +885,10 @@ export function portalAnimation(root: HTMLElement) {
     tapAt(inPortal("[data-pt-textarea]"), 0.9);
     typeAnswer(tl, stage, 1.1);
 
-    // …photographs the receipt…
+    // …photographs the invoice…
     tapAt(inPortal("[data-pt-attach]"), 2.2);
     tl.fromTo(camera, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 }, 2.35)
-      // the camera finds the receipt: the focus box closes in, then dims
+      // the camera finds the invoice: the focus box closes in, then dims
       .fromTo($(stage, "[data-pt-focus]"), { opacity: 0, scale: 1.4 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power2.out" }, 2.55)
       .to($(stage, "[data-pt-focus]"), { opacity: 0.45, duration: 0.2 }, 2.85);
     tapAt(onScreen("[data-pt-shutter]"), 2.95);
@@ -907,7 +907,7 @@ export function portalAnimation(root: HTMLElement) {
       4.45,
     );
 
-    // The firm sees it: the question is Answered, the reply arrives, then oneth's proposal from the receipt
+    // The firm sees it: the question is Answered, the reply arrives, then oneth's proposal from the invoice
     tl.fromTo($$(stage, "[data-pt-req-before]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, 4.7).fromTo(
       $$(stage, "[data-pt-req-after]"),
       { opacity: 0, scale: 0.85 },
