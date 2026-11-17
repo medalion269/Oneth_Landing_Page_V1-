@@ -205,14 +205,6 @@ export const needsYou: { kind: DecisionKind; state: DecisionState; issue: string
   { kind: "classification", state: "awaiting_review", issue: "Record sales invoice SI-1027", client: "Marina Events FZ-LLC", amount: salesNet + vatOn(salesNet), confidence: 0.91 },
 ];
 
-/** oneth's daily briefing: short sentences, like an assistant message. */
-export const briefing = [
-  "I finished 9 tasks today and am working on 2 more.",
-  `2 decisions escalated and 14 waiting for review. Start with ${client.name}: two open bills match AED ${aed(catering)} to Al Manara Catering.`,
-  "3 periods are ready for sign-off: Marina Events FZ-LLC, Al Sufouh Interiors LLC and Palm Crest Dental Clinic.",
-  "October VAT returns for 4 clients are due in 11 days (28 Nov 2026).",
-];
-
 /** "Decisions this week": per day, decided within permissions (auto) and reviewed by people. */
 export const decisionsByDay = [
   { day: "Wed", auto: 3, reviewed: 4 },
@@ -228,6 +220,7 @@ export const readyForSignoff = [
   { client: "Marina Events FZ-LLC", month: "Oct 2026" },
   { client: "Al Sufouh Interiors LLC", month: "Oct 2026" },
   { client: "Palm Crest Dental Clinic", month: "Oct 2026" },
+  { client: "Blue Dhow Logistics LLC", month: "Oct 2026" },
 ];
 
 export const vatDeadlines = [
@@ -235,6 +228,18 @@ export const vatDeadlines = [
   { client: "Blue Dhow Logistics LLC", due: "28 Nov 2026", daysLeft: 11 },
   { client: "Oasis Grid Engineering LLC", due: "28 Nov 2026", daysLeft: 11 },
   { client: "Marina Events FZ-LLC", due: "28 Nov 2026", daysLeft: 11 },
+];
+
+/** "A, B and C" */
+const listNames = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : (names[0] ?? ""));
+const escalated = needsYou.filter((d) => d.state === "escalated").length;
+
+/** oneth's daily briefing: short sentences, like an assistant message. Counts and names come from the cards beside it. */
+export const briefing = [
+  `I finished ${overviewToday.tasksDone} tasks today and am working on ${overviewToday.tasksRunning} more.`,
+  `${escalated} decisions escalated and ${overviewToday.awaitingReview} waiting for review. Start with ${client.name}: two open bills match AED ${aed(catering)} to Al Manara Catering.`,
+  `${readyForSignoff.length} periods are ready for sign-off: ${listNames(readyForSignoff.map((p) => p.client))}.`,
+  `October VAT returns for ${vatDeadlines.length} clients are due in ${vatDeadlines[0].daysLeft} days (${vatDeadlines[0].due}).`,
 ];
 
 /* ------------------------------------------------------------------ */

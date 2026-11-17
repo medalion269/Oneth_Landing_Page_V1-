@@ -114,7 +114,10 @@ function Briefing() {
   );
 }
 
-/** Rounded bars per day: blue for what oneth decided within its permissions, grey for what people reviewed. */
+/**
+ * Rounded bars per day: blue for what oneth decided within its permissions, grey for what people reviewed. The chart
+ * takes the card's full height (the app's chart is tall too), so the card has no empty strip under it.
+ */
 function DecisionsChart() {
   const max = Math.max(...decisionsByDay.map((d) => Math.max(d.auto, d.reviewed)));
   return (
@@ -127,10 +130,10 @@ function DecisionsChart() {
           <span className="size-2.5 rounded-full bg-muted" /> Reviewed
         </span>
       </div>
-      <div className="flex h-40 items-end justify-between gap-3 px-2">
+      <div className="flex min-h-40 flex-1 items-end justify-between gap-3 px-2">
         {decisionsByDay.map((d) => (
-          <div key={d.day} className="flex flex-1 flex-col items-center gap-2">
-            <div className="flex h-32 items-end gap-1">
+          <div key={d.day} className="flex h-full flex-1 flex-col items-center gap-2">
+            <div className="flex min-h-0 flex-1 items-end gap-1">
               <span className="w-3.5 rounded-t-md bg-accent" style={{ height: `${(d.auto / max) * 100}%` }} />
               <span className="w-3.5 rounded-t-md bg-muted" style={{ height: `${(d.reviewed / max) * 100}%` }} />
             </div>

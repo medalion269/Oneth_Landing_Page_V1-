@@ -88,7 +88,7 @@ export default function Hero() {
           <div
             className="hero-dash-enter h-full"
             role="img"
-            aria-label="The oneth app's Overview in shadow mode: 9 tasks completed today, 14 decisions awaiting review, two escalations that need a person, the daily briefing, decisions this week, three periods ready for sign-off and upcoming VAT deadlines."
+            aria-label="The oneth app's Overview in shadow mode: 9 tasks completed today, 14 decisions awaiting review, two escalations that need a person, the daily briefing, decisions this week, four periods ready for sign-off and upcoming VAT deadlines."
           >
             <AccountingDashboard variant="full" />
           </div>
