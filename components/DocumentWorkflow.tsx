@@ -1,13 +1,18 @@
 "use client";
 
 import { useRef } from "react";
-import Brand, { BrandMark } from "./Brand";
+import { Check, FileText } from "lucide-react";
+import Brand from "./Brand";
 import SectionHeading from "./SectionHeading";
 import Stage from "./Stage";
 import { ClientPdfDoc, InvoiceDoc, ReceiptDoc, StatementDoc, type InvoiceField } from "./Documents";
-import { IconCheck, IconDoc, IconSpark } from "./icons";
+import { IconSpark } from "./icons";
+import { Chip, ConfidenceBar, ICON_SM } from "./app/ui";
 import { documentWorkflowAnimation, useGSAP } from "@/lib/animations";
-import { aed, client, formatTrn, invoice, preparedEntry } from "@/lib/demo-data";
+import { aed, formatTrn, invoice, preparedEntry } from "@/lib/demo-data";
+
+/** The app runs in shadow mode: it proposes, people approve, nothing is written back. */
+const NOT_WRITTEN = "oneth only proposes. Nothing is written to your books.";
 
 /** Invoice field -> entry row. Order is the order the connectors draw. */
 const CONNECTORS: { from: InvoiceField; to: string }[] = [
@@ -25,8 +30,8 @@ const HIGHLIGHTS: InvoiceField[] = ["supplier", "trn", "number", "date", "subtot
 const entryFields = [
   { key: "supplier", label: "Supplier", value: invoice.supplier },
   { key: "trn", label: "Supplier TRN", value: formatTrn(invoice.supplierTrn) },
-  { key: "number", label: "Bill number", value: invoice.number },
-  { key: "date", label: "Bill date", value: `${invoice.date} · due ${invoice.due}` },
+  { key: "number", label: "Invoice no.", value: invoice.number },
+  { key: "date", label: "Invoice date", value: `${invoice.date} · due ${invoice.due}` },
 ];
 
 function Skeleton({ w = "66%" }: { w?: string }) {
@@ -37,109 +42,108 @@ function Spinner() {
   return <span aria-hidden className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" />;
 }
 
-/** The entry oneth prepares from the invoice, as it appears in the product. */
-function EntryPanel({ mobile = false }: { mobile?: boolean }) {
-  const cols = mobile ? "grid-cols-[1fr_64px_64px]" : "grid-cols-[1fr_86px_86px]";
+/**
+ * What oneth makes of the invoice, as the app shows it: the Document card with the fields it read (checked by the
+ * engine, then "Validated"), and the classification decision it proposes, waiting for review.
+ */
+function EntryPanel() {
+  const cols = "grid-cols-[1fr_88px_88px]";
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-line bg-paper text-[12px] leading-snug text-ink shadow-float">
-      <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
-        <BrandMark size={22} />
-        <div className="min-w-0 leading-tight">
-          <p className="truncate text-[12.5px] font-semibold">{client.name}</p>
-          <p className="text-[11px] text-muted">November 2026 · Supplier bills</p>
-        </div>
-        <span className="stack ml-auto shrink-0">
-          <span data-status-processing className="pill pill-neutral justify-self-end text-[11px]!" style={{ opacity: 0 }}>
-            <Spinner /> Reading document
+    <div className="relative flex flex-col gap-4 font-app text-[13px] leading-[18px] text-ink antialiased">
+      <section className="flex flex-col gap-3 rounded-app-card bg-paper p-6 shadow-app">
+        <header className="flex items-center justify-between gap-3">
+          <p className="text-[15px] font-semibold leading-[22px]">Document</p>
+          <span className="flex items-center gap-2">
+            <Chip size="sm" tone="neutral">
+              <FileText {...ICON_SM} /> {invoice.file}
+            </Chip>
+            <span className="stack shrink-0">
+              <span data-status-processing className="justify-self-end" style={{ opacity: 0 }}>
+                <Chip size="sm" tone="neutral">
+                  <Spinner /> Reading
+                </Chip>
+              </span>
+              <span data-status-ready className="justify-self-end">
+                <Chip size="sm" tone="done">
+                  Validated
+                </Chip>
+              </span>
+            </span>
           </span>
-          <span data-status-ready className="pill pill-accent justify-self-end text-[11px]!">
-            <IconCheck size={12} /> Ready for review
-          </span>
-        </span>
-      </div>
-
-      <div className="px-4 pb-4 pt-3.5">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[14px] font-semibold tracking-[-0.015em]">Prepared entry</p>
-          <span className="flex items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[10.5px] text-muted">
-            <IconDoc size={12} /> {invoice.file}
-          </span>
-        </div>
-
-        <div className="mt-3 rounded-xl border border-line">
+        </header>
+        <div className="flex flex-col">
           {entryFields.map((f) => (
-            <div
-              key={f.key}
-              data-target={f.key}
-              className={`grid ${mobile ? "grid-cols-[92px_1fr]" : "grid-cols-[108px_1fr]"} items-center gap-3 border-b border-line-soft px-3 py-[7px] last:border-0`}
-            >
+            <div key={f.key} data-target={f.key} className="grid grid-cols-[112px_1fr] items-center gap-3 border-b border-line-soft py-1.5 last:border-0">
               <span className="text-muted">{f.label}</span>
-              <span className="relative min-w-0">
+              <span className="relative min-w-0 text-right">
                 <Skeleton />
-                <span data-value className="tnum block truncate font-medium">
+                <span data-value className="block truncate tabular-nums">
                   {f.value}
                 </span>
               </span>
             </div>
           ))}
         </div>
+      </section>
 
-        <div className="mt-3 rounded-xl border border-line">
-          <div className={`grid ${cols} gap-3 border-b border-line px-3 py-1.5 text-[11px] text-muted`}>
-            <span>Account</span>
+      <section className="flex flex-col gap-3 rounded-app-card bg-paper p-6 shadow-app">
+        <header className="flex items-center justify-between gap-3">
+          <p className="text-[15px] font-semibold leading-[22px]">Decision record</p>
+          <span data-entry-extra className="flex items-center gap-2">
+            <Chip size="sm" tone="neutral">
+              Classification
+            </Chip>
+            <Chip size="sm" tone="review">
+              Awaiting review
+            </Chip>
+          </span>
+        </header>
+        <div>
+          <div className={`grid ${cols} gap-3 pb-1 text-[12px] text-muted`}>
+            <span>Proposal</span>
             <span className="text-right">Debit</span>
             <span className="text-right">Credit</span>
           </div>
           {preparedEntry.lines.map((l) => (
-            <div key={l.code} data-target={`l${l.code}`} className={`grid ${cols} items-center gap-3 border-b border-line-soft px-3 py-[7px]`}>
+            <div key={l.code} data-target={`l${l.code}`} className={`grid ${cols} items-center gap-3 border-t border-line-soft py-1.5`}>
               <span className="relative min-w-0">
                 <Skeleton w="80%" />
-                <span data-value className={mobile ? "block" : "block truncate"}>
-                  <span className="tnum mr-1.5 text-muted">{l.code}</span>
+                <span data-value className="block truncate">
+                  <span className="mr-1.5 text-muted tabular-nums">{l.code}</span>
                   {l.account}
                 </span>
               </span>
-              <span className="tnum relative text-right">
+              <span className="relative text-right tabular-nums">
                 {l.debit ? (
                   <>
                     <Skeleton w="100%" />
                     <span data-value>{aed(l.debit)}</span>
                   </>
-                ) : (
-                  <span className="text-faint">·</span>
-                )}
+                ) : null}
               </span>
-              <span className="tnum relative text-right">
+              <span className="relative text-right tabular-nums">
                 {l.credit ? (
                   <>
                     <Skeleton w="100%" />
                     <span data-value>{aed(l.credit)}</span>
                   </>
-                ) : (
-                  <span className="text-faint">·</span>
-                )}
+                ) : null}
               </span>
             </div>
           ))}
-          <div data-entry-extra className={`grid ${cols} gap-3 rounded-b-xl bg-canvas/70 px-3 py-[7px] font-semibold`}>
-            <span>Total</span>
-            <span className="tnum text-right">{aed(invoice.total)}</span>
-            <span className="tnum text-right">{aed(invoice.total)}</span>
-          </div>
         </div>
-
-        <div data-entry-extra className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-muted">VAT treatment</span>
-          <span className="pill pill-accent text-[11px]!">{preparedEntry.vatTreatment}</span>
-          <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-ok">
-            <IconCheck size={12} /> Debits equal credits
+        <div data-entry-extra className="flex items-center gap-3 border-t border-line-soft pt-3">
+          <ConfidenceBar value={0.94} />
+          <span className="text-muted">High confidence</span>
+          <span className="ml-auto inline-flex items-center gap-1 font-semibold text-ok">
+            <Check {...ICON_SM} /> Debits equal credits
           </span>
         </div>
-        <p data-entry-extra className="mt-2.5 text-[11px] text-muted">
-          Prepared by <Brand /> from {invoice.file}. Nothing is posted until your team approves.
+        <p data-entry-extra className="text-[12px] text-muted">
+          Prepared by <Brand /> from {invoice.file}. {NOT_WRITTEN}
         </p>
-      </div>
-      <div data-panel-glow aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-accent/35" />
+      </section>
+      <div data-panel-glow aria-hidden className="pointer-events-none absolute -inset-1 rounded-[28px] ring-2 ring-accent/35" />
     </div>
   );
 }
@@ -149,7 +153,7 @@ function DesktopScene() {
     <Stage
       width={1200}
       height={600}
-      label={`A supplier invoice from ${invoice.supplier} is read. Its supplier, TRN, invoice number, date, subtotal, VAT and total are copied into a prepared bill in oneth, which is marked ready for review.`}
+      label={`A supplier invoice from ${invoice.supplier} is read. Its supplier, TRN, invoice number and date fill the app's Document card, which is validated, and its subtotal, VAT and total become oneth's proposed journal, which waits for review.`}
     >
       {/* Source documents. Final positions form a stack behind the invoice. */}
       <div data-doc="statement" data-rot="-6" className="absolute" style={{ left: 30, top: 300, transform: "rotate(-6deg)" }}>
@@ -248,7 +252,7 @@ function MobileScene() {
           width={W}
           height={H}
           maxScale={1.15}
-          label={`A scan line reads the tax invoice from ${invoice.supplier}. The supplier, invoice number, subtotal, VAT and total move into a ledger entry that balances at AED ${aed(invoice.total)} and is stamped ready for review.`}
+          label={`A scan line reads the tax invoice from ${invoice.supplier}. The supplier, invoice number, subtotal, VAT and total move into oneth's proposed entry, which balances at AED ${aed(invoice.total)} and waits for review.`}
         >
           {/* The source invoice */}
           <div data-scan-doc className="absolute overflow-hidden rounded-xl border border-line bg-paper p-3.5 text-[11px] leading-[1.4] shadow-lift" style={{ left: 20, top: 6, width: 300 }}>
@@ -303,14 +307,14 @@ function MobileScene() {
           </div>
 
           {/* The ledger the fields land in */}
-          <div data-ledger className="absolute rounded-2xl border border-line bg-paper p-3.5 text-[12px] leading-snug shadow-float" style={{ left: 10, top: 248, width: 320 }}>
+          <div data-ledger className="absolute rounded-app-card bg-paper p-4 font-app text-[12px] leading-snug shadow-float" style={{ left: 10, top: 248, width: 320 }}>
             <div className="flex items-center justify-between">
-              <p className="text-[13.5px] font-semibold tracking-[-0.015em]">Ledger entry</p>
+              <p className="text-[14px] font-semibold">Decision record</p>
               <p className="tnum text-[11px] text-muted">
                 <span data-scan-count>5</span> of 5 fields read
               </p>
             </div>
-            <div className="mt-2 divide-y divide-line-soft rounded-xl border border-line">
+            <div className="mt-2 divide-y divide-line-soft rounded-app-tile bg-line-soft/60">
               <div className="flex items-center justify-between gap-2 px-3 py-[7px]">
                 <Slot field="supplier" className="min-w-0 truncate font-medium">
                   {invoice.supplierShort}
@@ -335,19 +339,16 @@ function MobileScene() {
                 );
               })}
             </div>
-            <div data-ledger-foot className="mt-2.5 flex items-center justify-between">
-              <span className="pill pill-accent text-[10.5px]!">{preparedEntry.vatTreatment}</span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ok">
-                <IconCheck size={11} /> Debits equal credits
+            <div data-ledger-foot className="mt-2.5 flex items-center justify-between gap-2">
+              <span data-stamp className="inline-flex">
+                <Chip size="sm" tone="review">
+                  Awaiting review
+                </Chip>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ok">
+                <Check size={12} strokeWidth={2} /> Debits equal credits
               </span>
             </div>
-            <span
-              data-stamp
-              className="absolute -top-3.5 right-3 rounded-md border-2 border-accent bg-paper px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-accent"
-              style={{ transform: "rotate(-7deg)" }}
-            >
-              Ready for review
-            </span>
           </div>
 
           {/* Chips that carry each value from the invoice to the ledger */}

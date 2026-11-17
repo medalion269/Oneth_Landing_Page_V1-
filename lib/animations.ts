@@ -394,11 +394,11 @@ export function documentWorkflowAnimation(root: HTMLElement) {
 
     const end = SCAN_START + SCAN_LEN;
     tl.fromTo($(stage, "[data-ledger-foot]"), { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.4 }, end + 0.6)
-      // The entry is stamped, like a paper ledger
+      // The proposal joins the review queue (the app's Awaiting review chip)
       .fromTo(
         $(stage, "[data-stamp]"),
-        { opacity: 0, scale: 1.8, rotation: -18 },
-        { opacity: 1, scale: 1, rotation: -7, duration: 0.45, ease: "back.out(1.6)" },
+        { opacity: 0, scale: 1.5 },
+        { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)" },
         end + 1.1,
       )
       .to({}, { duration: 0.6 }, end + 1.6);
