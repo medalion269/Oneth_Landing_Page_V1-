@@ -37,6 +37,9 @@ Requires Node 20 or newer (built and tested on Node 24).
   (`BrandMark`, `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `public/oneth-icon.svg`) are copied unchanged from
   the app (`../frontend/src/components/BrandMark.tsx`, `../frontend/public/`).
 - Colours are the palette the app is adopting (`../docs/DECISIONS.md`, D41): blue `#033FFE` on `#F8F7F4`.
+- The product scenes are drawn from the app's own screens (`../docs/DECISIONS.md`, L2) with the building blocks in
+  `components/app/ui.tsx` and Inter, so the page shows what the product really does. Their wording comes from the app and
+  the backend (checklist items, request titles, status chips); keep it in step when the app changes.
 - "Sign in" links go to the app's `/login` at `NEXT_PUBLIC_APP_URL` (see `lib/app-url.ts` and `.env.example`). In
   development they default to http://localhost:5173; a production build without the variable hides them.
 
@@ -89,13 +92,16 @@ app/
   api/apply/route.ts    submission endpoint
 components/
   Navbar.tsx            hides on scroll down, returns on scroll up
-  Hero.tsx              word-by-word headline; the dashboard rises and fills the screen
-  AccountingDashboard.tsx  product UI (full desktop + compact mobile)
-  DocumentWorkflow.tsx  documents -> highlighted fields -> prepared entry
-  Reconciliation.tsx    bank lines <-> invoices and bills, review panel
-  ApprovalWorkflow.tsx  evidence, explanation, cursor approves the entry
-  DecisionPaper.tsx     "How it decides": the decision written up as a working paper with tick marks
-  ApprovalLimits.tsx    "You set the limits": approval-limits grid, pilot month to month 3
+  Hero.tsx              word-by-word headline; the app's Overview rises and fills the screen
+  AccountingDashboard.tsx  the app's Overview (full desktop + compact mobile)
+  DocumentWorkflow.tsx  Prepare: invoice -> the app's Document card and decision record
+  Reconciliation.tsx    Reconcile: the app's Bank lines and Ledger items cards, Needs your review panel
+  ApprovalWorkflow.tsx  Review: the app's Decision screen; its decision record writes itself in, a cursor approves
+  KnowledgeScene.tsx    Knowledge: a precedent is saved (Precedents tab), then the next bill cites it
+  ApprovalLimits.tsx    "You set the limits": the app's Settings, Permissions, pilot month to month 3
+  PortalScene.tsx       Client portal: the client answers and sends a photo; the firm's Communications tab updates
+  PeriodCloseScene.tsx  Period close: the checklist turns Done, a partner signs off, the month is locked
+  app/ui.tsx            the app's building blocks (rail, top bar, cards, chips, rows, pills) for the mockups
   Features.tsx          six feature cards, supported tools, UAE data commitment
   Outlook.tsx           one line on where the product is going, just before the form
   PilotForm.tsx         pilot application + waitlist tabs
