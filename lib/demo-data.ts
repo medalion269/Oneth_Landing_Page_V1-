@@ -357,6 +357,28 @@ export const portalQuestion = {
   reproposedAt: "14 Nov 2026, 18:23",
 };
 
+const chairs = 6;
+/**
+ * The receipt the client photographs: the shop's thermal tax invoice for the chairs, paid by the card on the bank line.
+ * Shelf prices include VAT, as on most UAE till receipts: 6 × 191.50 = 1,149.00, of which VAT is 54.71.
+ */
+export const bazaarReceipt = {
+  merchant: "BAZAAR LANE",
+  tagline: "Home & Outdoor",
+  address: "Unit 12, Al Quoz Industrial 2, Dubai",
+  trn: "100452177890003",
+  number: "BL-261112-0873",
+  date: "12/11/2026",
+  time: "16:42",
+  item: "Folding chair, teak",
+  sku: "40118",
+  qty: chairs,
+  unit: round2(-missingLine.amount / chairs), // 191.50
+  ...splitGross(-missingLine.amount), // net 1,094.29, vat 54.71, gross 1,149.00
+  card: client.account,
+  auth: "482910",
+};
+
 /** Another open request in the client's Communications tab: nothing uploaded yet, so it is still Waiting. */
 export const openRequest = { title: "November bank statement", asked: "3 Nov 2026" };
 

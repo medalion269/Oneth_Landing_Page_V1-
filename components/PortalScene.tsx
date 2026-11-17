@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef } from "react";
-import { FileQuestion, FileUp, LogOut, MessageCircle } from "lucide-react";
+import { ChevronUp, FileQuestion, FileUp, LogOut, MessageCircle, RefreshCw, ZapOff } from "lucide-react";
 import Brand from "./Brand";
 import SectionHeading from "./SectionHeading";
 import Stage from "./Stage";
 import { AppCard, AppRail, AppTopBar, Chip, ICON, ListRow, PillButton } from "./app/ui";
 import { portalAnimation, useGSAP } from "@/lib/animations";
-import { aed, client, firm, formatTrn, openRequest, portalQuestion, splitGross } from "@/lib/demo-data";
+import { aed, bazaarReceipt, client, firm, formatTrn, openRequest, portalQuestion } from "@/lib/demo-data";
 
 /*
  * Client portal, "answer and snap". Left: the client's phone, on the portal the firm sends them to
@@ -20,7 +20,6 @@ import { aed, client, firm, formatTrn, openRequest, portalQuestion, splitGross }
 const q = portalQuestion;
 /** The portal's width inside the desktop phone, in CSS pixels (a small phone), before it is scaled to the screen. */
 const PHONE_WIDTH = 360;
-const receiptAmounts = splitGross(q.line.amount);
 const replySummary = `${client.contactName} replied: “${q.answer}” and attached ${q.photo}`;
 const askSummary = `${firm.reviewer} asked the client: “${q.message}”`;
 const onethSummary = `oneth: the client sent ${q.photo}; it proposes settling the AED ${aed(q.line.amount)} line against it`;
@@ -90,14 +89,16 @@ function QuestionCard() {
   );
 }
 
-/** A tiny picture of the photographed receipt, beside the attachment's name. */
+/** A thumbnail of the photo just taken (the receipt on the countertop), beside the attachment's name. */
 function ReceiptThumb() {
   return (
-    <span aria-hidden className="flex h-7 w-5 shrink-0 flex-col gap-[2px] rounded-[3px] bg-line-soft px-[3px] py-[4px]">
-      <span className="h-[2px] w-full rounded-full bg-faint" />
-      <span className="h-[2px] w-2/3 rounded-full bg-faint" />
-      <span className="h-[2px] w-full rounded-full bg-faint" />
-      <span className="mt-auto h-[2px] w-1/2 self-end rounded-full bg-ink" />
+    <span aria-hidden className="cam-surface relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[4px]">
+      <span className="receipt-paper flex h-[22px] w-[11px] -rotate-6 flex-col gap-[2px] px-[2px] pt-[3px] shadow-[0_2px_3px_rgb(0_0_0/0.35)]">
+        <span className="h-px w-full bg-current opacity-50" />
+        <span className="h-px w-2/3 bg-current opacity-40" />
+        <span className="h-px w-full bg-current opacity-40" />
+        <span className="mt-auto mb-[3px] h-[3px] w-full bg-current opacity-60" />
+      </span>
     </span>
   );
 }
@@ -137,32 +138,108 @@ function Portal({ phone = false }: { phone?: boolean }) {
   );
 }
 
-/** The phone's camera, shown only while the timeline plays: the receipt in the viewfinder, then the shutter. */
+/** A till roll's torn ends: a zigzag along the top and bottom edges, as a clip-path. */
+const TORN = (() => {
+  const teeth = 26;
+  const depth = 2.5;
+  const x = (i: number) => `${((i / teeth) * 100).toFixed(2)}%`;
+  const top = Array.from({ length: teeth + 1 }, (_, i) => `${x(i)} ${i % 2 ? depth : 0}px`);
+  const bottom = Array.from({ length: teeth + 1 }, (_, i) => teeth - i).map((k) => `${x(k)} calc(100% - ${k % 2 ? depth : 0}px)`);
+  return `polygon(${[...top, ...bottom].join(", ")})`;
+})();
+
+function ReceiptRule() {
+  return <span className="my-[3px] border-t border-dashed border-current opacity-35" />;
+}
+
+function ReceiptRow({ left, right, className = "" }: { left: string; right: string; className?: string }) {
+  return (
+    <span className={`flex justify-between gap-2 ${className}`}>
+      <span>{left}</span>
+      <span className="tabular-nums">{right}</span>
+    </span>
+  );
+}
+
+/** The shop's thermal tax invoice, as printed: header with TRN, the line, totals with VAT, the card slip, a barcode. */
+function Receipt() {
+  const r = bazaarReceipt;
+  return (
+    <div className="receipt-paper flex w-[160px] flex-col gap-[2px] px-3 pb-5 pt-5 font-mono text-[7.5px] leading-[10px]" style={{ clipPath: TORN }}>
+      <span className="text-center text-[12px] font-bold leading-[14px] tracking-[0.14em]">{r.merchant}</span>
+      <span className="text-center">{r.tagline}</span>
+      <span className="text-center">{r.address}</span>
+      <span className="text-center">TRN {r.trn}</span>
+      <ReceiptRule />
+      <span className="text-center text-[9px] font-bold tracking-[0.22em]">TAX INVOICE</span>
+      <ReceiptRow left="Invoice" right={r.number} />
+      <ReceiptRow left={r.date} right={r.time} />
+      <ReceiptRule />
+      <span className="uppercase">{r.item}</span>
+      <ReceiptRow left={`  ${r.qty} x ${aed(r.unit)}`} right={aed(r.gross)} />
+      <span className="text-[6.5px] opacity-70">SKU {r.sku} · prices incl. VAT</span>
+      <ReceiptRule />
+      <ReceiptRow left="TOTAL AED" right={aed(r.gross)} className="text-[9.5px] font-bold leading-[13px]" />
+      <ReceiptRow left="Amount excl. VAT" right={aed(r.net)} />
+      <ReceiptRow left="VAT 5%" right={aed(r.vat)} />
+      <ReceiptRule />
+      <ReceiptRow left={`CARD ****${r.card}`} right={aed(r.gross)} />
+      <ReceiptRow left="APPROVED" right={`AUTH ${r.auth}`} />
+      <ReceiptRule />
+      <span className="text-center">Thank you for shopping with us</span>
+      <span className="receipt-barcode mx-auto mt-1.5 h-6 w-[112px]" />
+      <span className="text-center text-[6.5px] tracking-[0.18em]">{r.number}</span>
+    </div>
+  );
+}
+
+/**
+ * The phone's camera, shown only while the timeline plays: the receipt lying on a countertop in the viewfinder, a focus
+ * box, then the shutter. The photo is drawn in CSS (paper, torn ends, curl and crease, grain, vignette).
+ */
 function Camera() {
   return (
-    <div data-pt-camera aria-hidden className="absolute inset-0 z-10 flex flex-col bg-ink" style={{ opacity: 0, visibility: "hidden" }}>
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex w-[150px] -rotate-3 flex-col gap-1.5 rounded-[6px] bg-paper px-3 py-4 font-mono text-[9px] leading-[12px] text-ink shadow-lift">
-          <span className="text-center font-semibold">BAZAAR LANE ONLINE</span>
-          <span className="text-center text-muted">Tax invoice · 12/11/2026</span>
-          <span className="my-1 border-t border-dashed border-line" />
-          <span className="flex justify-between">
-            <span>6 × Folding chair</span>
-            <span>{aed(receiptAmounts.gross)}</span>
+    <div data-pt-camera aria-hidden className="absolute inset-0 z-10 flex flex-col bg-[#050505] font-app" style={{ opacity: 0, visibility: "hidden" }}>
+      <div className="flex h-12 shrink-0 items-end justify-between px-6 pb-2 text-white/85">
+        <ZapOff size={16} strokeWidth={1.75} />
+        <ChevronUp size={16} strokeWidth={1.75} />
+        <span className="size-4" />
+      </div>
+      <div className="cam-surface relative min-h-0 flex-1 overflow-hidden">
+        <svg className="absolute inset-0 h-full w-full opacity-[0.22] mix-blend-overlay" aria-hidden>
+          <filter id="pt-grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#pt-grain)" />
+        </svg>
+        <div
+          className="absolute left-1/2 top-1/2"
+          style={{
+            transform: "translate(-50%, -50%) perspective(700px) rotateX(14deg) rotate(-5deg)",
+            filter: "drop-shadow(0 16px 14px rgb(0 0 0 / 0.42)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.3))",
+          }}
+        >
+          <Receipt />
+        </div>
+        <div className="cam-vignette absolute inset-0" />
+        {/* Tap-to-focus box */}
+        <span data-pt-focus className="absolute left-1/2 top-1/2 size-[92px] -translate-x-1/2 -translate-y-1/2 border border-[#ffd60a]" style={{ opacity: 0 }} />
+      </div>
+      <div className="flex shrink-0 flex-col items-center gap-3 pb-7 pt-3">
+        <div className="flex gap-4 text-[10px] font-semibold tracking-[0.08em]">
+          <span className="text-white/45">VIDEO</span>
+          <span className="text-[#ffd60a]">PHOTO</span>
+          <span className="text-white/45">PORTRAIT</span>
+        </div>
+        <div className="flex w-full items-center justify-between px-8">
+          <span className="size-10 rounded-[8px] bg-white/15 ring-1 ring-white/25" />
+          <span data-pt-shutter className="flex size-16 items-center justify-center rounded-full border-[3px] border-white">
+            <span className="size-[52px] rounded-full bg-white" />
           </span>
-          <span className="flex justify-between text-muted">
-            <span>incl. VAT 5%</span>
-            <span>{aed(receiptAmounts.vat)}</span>
-          </span>
-          <span className="my-1 border-t border-dashed border-line" />
-          <span className="flex justify-between font-semibold">
-            <span>TOTAL AED</span>
-            <span>{aed(receiptAmounts.gross)}</span>
+          <span className="flex size-10 items-center justify-center rounded-full bg-white/15 text-white">
+            <RefreshCw size={16} strokeWidth={1.75} />
           </span>
         </div>
-      </div>
-      <div className="flex items-center justify-center pb-8 pt-4">
-        <span data-pt-shutter className="size-14 rounded-full border-4 border-white/70 bg-white" />
       </div>
       <span data-pt-flash className="absolute inset-0 bg-white" style={{ opacity: 0 }} />
     </div>

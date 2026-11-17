@@ -887,7 +887,10 @@ export function portalAnimation(root: HTMLElement) {
 
     // …photographs the receipt…
     tapAt(inPortal("[data-pt-attach]"), 2.2);
-    tl.fromTo(camera, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 }, 2.35);
+    tl.fromTo(camera, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 }, 2.35)
+      // the camera finds the receipt: the focus box closes in, then dims
+      .fromTo($(stage, "[data-pt-focus]"), { opacity: 0, scale: 1.4 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power2.out" }, 2.55)
+      .to($(stage, "[data-pt-focus]"), { opacity: 0.45, duration: 0.2 }, 2.85);
     tapAt(onScreen("[data-pt-shutter]"), 2.95);
     tl.fromTo($(stage, "[data-pt-flash]"), { opacity: 0 }, { opacity: 1, duration: 0.06 }, 3.1)
       .to($(stage, "[data-pt-flash]"), { opacity: 0, duration: 0.25 }, 3.16)
