@@ -96,8 +96,8 @@ function NextDecision({ compact = false }: { compact?: boolean }) {
       data-kn-next
       title="Decision record"
       action={
-        <Chip size="sm" tone="review">
-          Needs review
+        <Chip size="sm" tone="accent">
+          Proposed
         </Chip>
       }
       className={compact ? "" : "h-full"}

@@ -340,7 +340,211 @@
     height: 100svh;
     transform-origin: 50% 0%;
     transform: translate3d(0, max(67svh, 560px), 0) rotateX(14deg) scale(0.76);
+    /* The app is clickable; lib/animations.ts keeps it inert until it fills the screen */
+    pointer-events: auto;
   }
+}
+
+/* While the hero's app fills the screen, the landing's top bar steps aside (it would cover the app's top bar). */
+[data-site-nav] {
+  transition: opacity 0.25s ease;
+}
+html[data-hero-app-live] [data-site-nav] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The hero app: each screen fades in as it opens; the "click around" hint arrives once the app has settled. */
+@keyframes app-screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes app-hint-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app-screen-in {
+    animation: app-screen-in 0.35s var(--ease-out-expo) both;
+  }
+  .app-hint {
+    animation: app-hint-in 0.6s var(--ease-out-expo) both 1.4s;
+  }
+}
+
+/* The hero app's guided work (components/hero-app): the spotlight glides between targets, the next click pulses,
+   cards arrive, the client's answer is typed, toasts close themselves. */
+.guide-hole {
+  transition:
+    left 0.35s var(--ease-out-expo),
+    top 0.35s var(--ease-out-expo),
+    width 0.35s var(--ease-out-expo),
+    height 0.35s var(--ease-out-expo),
+    border-radius 0.35s var(--ease-out-expo),
+    opacity 0.25s ease;
+}
+.guide-ring {
+  box-shadow: 0 0 0 3px var(--color-accent);
+  transition:
+    left 0.35s var(--ease-out-expo),
+    top 0.35s var(--ease-out-expo),
+    width 0.35s var(--ease-out-expo),
+    height 0.35s var(--ease-out-expo),
+    opacity 0.25s ease;
+}
+@keyframes guide-pulse {
+  0% {
+    box-shadow: 0 0 0 3px var(--color-accent), 0 0 0 3px rgb(3 63 254 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 3px var(--color-accent), 0 0 0 14px rgb(3 63 254 / 0);
+  }
+}
+@keyframes guide-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes phone-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+@keyframes attach-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes keyboard-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes press {
+  40% {
+    transform: scale(0.95);
+    filter: brightness(0.9);
+  }
+}
+@keyframes word-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes hl-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.3);
+  }
+}
+@keyframes chip-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.12);
+  }
+}
+@keyframes photo-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(-6deg);
+  }
+}
+/* A toast stays readable for a few seconds, then fades; the end of this animation closes it (reduced motion too). */
+@keyframes toast-life {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  6%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.toast-life {
+  animation: toast-life 4.2s ease both;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .guide-ring {
+    animation: guide-pulse 1.3s ease-out infinite;
+  }
+  .guide-callout,
+  .guide-invite {
+    animation: guide-pop 0.3s var(--ease-out-expo) both;
+  }
+  .card-in {
+    animation: slide-in-right 0.45s var(--ease-out-expo) both;
+  }
+  .phone-in {
+    animation: phone-in 0.45s var(--ease-out-expo) both;
+  }
+  .phone-word {
+    animation: word-in 0.2s ease both;
+  }
+  .phone-attach {
+    animation: attach-in 0.35s var(--ease-out-expo) both;
+  }
+  .phone-keyboard {
+    animation: keyboard-up 0.35s var(--ease-out-expo) both;
+  }
+  .phone-caret {
+    animation: caret-blink 1s steps(1) infinite;
+  }
+  .phone-press {
+    animation: press 0.5s ease both 0.6s;
+  }
+  .photo-in {
+    animation: photo-in 0.5s var(--ease-out-expo) both;
+  }
+  /* oneth reading the invoice: its key fields light up one after another */
+  .hero-doc .hl-box {
+    animation: hl-in 0.45s var(--ease-out-expo) both;
+  }
+  .hero-doc [data-hl="trn"] {
+    animation-delay: 0.35s;
+  }
+  .hero-doc [data-hl="lines"] {
+    animation-delay: 0.6s;
+  }
+  .hero-doc [data-hl="vat"] {
+    animation-delay: 0.85s;
+  }
+  .hero-doc [data-hl="total"] {
+    animation-delay: 1.1s;
+  }
+  .chip-pop-inner {
+    display: inline-block;
+    animation: chip-pop 0.45s var(--ease-out-expo) both;
+  }
+}
+/* The decision record fades out at the bottom where a short window cuts it off */
+.record-fade > div:last-child {
+  -webkit-mask-image: linear-gradient(to bottom, #000 85%, transparent);
+  mask-image: linear-gradient(to bottom, #000 85%, transparent);
 }
 
 /* ------------------------------------------------------------------ */

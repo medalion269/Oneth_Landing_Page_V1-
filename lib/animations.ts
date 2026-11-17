@@ -19,6 +19,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { useGSAP } from "@gsap/react";
 import { aed } from "./demo-data";
+import { isNavigating } from "./scroll";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, MotionPathPlugin, useGSAP);
@@ -26,6 +27,17 @@ if (typeof window !== "undefined") {
 }
 
 export { gsap, ScrollTrigger, useGSAP };
+
+/**
+ * Window events from the hero's scroll scene to its clickable app (components/hero-app):
+ * - `live`: the app fills the pinned screen, or stops doing so (detail: { live: boolean, holdY }, holdY being the
+ *   scroll position where it lies flat, for holding the page during a replayed tour).
+ * - `arrive`: the visitor has just scrolled down onto the flat app for the first time on this load (detail:
+ *   { holdY }, the scroll position to hold while the guided tour plays). Never sent on a restored scroll position
+ *   or when coming back up from below.
+ * - `cancel`: the desktop scene was torn down (resized below 1024px, reduced motion turned on, unmount).
+ */
+export const HERO_EVENTS = { live: "oneth:hero-live", arrive: "oneth:hero-arrive", cancel: "oneth:hero-cancel" } as const;
 
 export const MEDIA = {
   /** Mirrors the `motion-desktop` Tailwind variant in globals.css */
@@ -115,7 +127,7 @@ function revealItems(scope: ParentNode, selector = "[data-reveal]") {
   });
 }
 
-function pinnedTimeline(root: HTMLElement, length: string) {
+function pinnedTimeline(root: HTMLElement, length: string, extra: ScrollTrigger.Vars = {}) {
   return gsap.timeline({
     defaults: { ease: "none" },
     scrollTrigger: {
@@ -126,6 +138,7 @@ function pinnedTimeline(root: HTMLElement, length: string) {
       pin: true,
       anticipatePin: 1,
       invalidateOnRefresh: true,
+      ...extra,
     },
   });
 }
@@ -152,7 +165,7 @@ export function navbarAnimation(nav: HTMLElement) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 1. Hero: dashboard rises and becomes the screen                      */
+/* 1. Hero: the app rises, becomes the screen and can be clicked       */
 /* ------------------------------------------------------------------ */
 
 export function heroAnimation(root: HTMLElement) {
@@ -166,17 +179,69 @@ export function heroAnimation(root: HTMLElement) {
 
     // Must equal the CSS starting pose in globals.css (.hero-dash)
     const startY = () => Math.max(window.innerHeight * 0.67, 560);
+    // Once the app fills the screen it holds for about a screen of scrolling. The guided work (hero-app/Guide.tsx)
+    // plays there, holding the page, then visitors can click around and scroll on.
+    const HOLD = 1.1;
+    const TOTAL = 1 + HOLD;
+    /** Scroll progress at which the app is flat (timeline time 1), and where the page is held during the tour. */
+    const FLAT = 1 / TOTAL;
+    const HOLD_AT = 1.08 / TOTAL;
+    const html = document.documentElement;
+    // The app takes clicks and focus only once it is (almost) flat. While it fills the pinned screen, the landing's
+    // own top bar steps aside (globals.css), since it would sit on the app's top bar. ScrollTrigger may call this
+    // while the timeline is still being created, hence the holder.
+    const made: { tl?: gsap.core.Timeline } = {};
+    const holdY = () => {
+      const st = made.tl?.scrollTrigger;
+      return st ? Math.round(st.start + (st.end - st.start) * HOLD_AT) : 0;
+    };
+    const sync = () => {
+      const tl = made.tl;
+      if (!tl) return;
+      const live = tl.time() >= 0.94;
+      const screenFilled = live && !!tl.scrollTrigger?.isActive;
+      if (dash.inert === live) dash.inert = !live;
+      if (html.hasAttribute("data-hero-app-live") !== screenFilled) {
+        html.toggleAttribute("data-hero-app-live", screenFilled);
+        window.dispatchEvent(new CustomEvent(HERO_EVENTS.live, { detail: { live: screenFilled, holdY: holdY() } }));
+      }
+    };
 
-    const tl = pinnedTimeline(root, "140%");
+    // Arrival: the scroll position crosses FLAT going down, while still pinned. The first update only records where
+    // the page is, so a scroll position restored on reload never counts.
+    let lastProgress: number | null = null;
+    let arrived = false;
+    const watchArrival = (self: ScrollTrigger) => {
+      const before = lastProgress;
+      lastProgress = self.progress;
+      if (arrived || before === null || self.direction !== 1) return;
+      if (before < FLAT && self.progress >= FLAT && self.progress < 1) {
+        arrived = true;
+        // A link carrying the page past the hero is not an arrival: no tour, now or on the way back
+        if (isNavigating()) return;
+        window.dispatchEvent(new CustomEvent(HERO_EVENTS.arrive, { detail: { holdY: holdY() } }));
+      }
+    };
+
+    const tl = (made.tl = pinnedTimeline(root, "240%", { onToggle: sync, onUpdate: watchArrival }));
+    tl.eventCallback("onUpdate", sync);
     tl.fromTo(
       dash,
       { y: startY, rotationX: 14, scale: 0.76 },
       { y: 0, rotationX: 0, scale: 1, ease: "power2.inOut", duration: 1 },
       0,
     )
-      .to(copy, { y: () => -window.innerHeight * 0.16, opacity: 0, scale: 0.97, ease: "power1.in", duration: 0.45 }, 0)
+      // autoAlpha: the faded copy is hidden too, so its buttons don't sit invisibly over the app
+      .to(copy, { y: () => -window.innerHeight * 0.16, autoAlpha: 0, scale: 0.97, ease: "power1.in", duration: 0.45 }, 0)
       .fromTo(frame, { borderRadius: 18 }, { borderRadius: 0, duration: 0.2 }, 0.8)
-      .to({}, { duration: 0.25 });
+      .to({}, { duration: HOLD });
+    sync();
+
+    return () => {
+      dash.inert = false;
+      html.removeAttribute("data-hero-app-live");
+      window.dispatchEvent(new CustomEvent(HERO_EVENTS.cancel));
+    };
   });
 
   mm.add(MEDIA.mobile, () => {

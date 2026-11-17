@@ -46,7 +46,7 @@ export default function Navbar() {
   };
 
   return (
-    <header ref={ref} data-scrolled="false" className="group/nav absolute inset-x-0 top-0 z-50 px-3 pt-3 lg:fixed">
+    <header ref={ref} data-scrolled="false" data-site-nav className="group/nav absolute inset-x-0 top-0 z-50 px-3 pt-3 lg:fixed">
       <div className="anim-nav">
         <nav
           aria-label="Main"

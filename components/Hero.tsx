@@ -2,6 +2,7 @@
 
 import { useRef, type CSSProperties } from "react";
 import AccountingDashboard from "./AccountingDashboard";
+import HeroApp from "./hero-app/HeroApp";
 import Brand from "./Brand";
 import { IconArrowRight } from "./icons";
 import { heroAnimation, useGSAP } from "@/lib/animations";
@@ -82,15 +83,11 @@ export default function Hero() {
         </p>
       </div>
 
-      {/* Desktop: full product UI. With motion it starts tilted below the fold and scrolls into the screen. */}
+      {/* Desktop: the app itself, clickable. With motion it starts tilted below the fold and scrolls into the screen. */}
       <div className="hero-dash-stage relative hidden px-8 pb-24 pt-16 lg:block motion-desktop:p-0">
         <div data-hero-dash className="hero-dash mx-auto h-[min(820px,86svh)] max-w-[1280px] motion-desktop:max-w-none">
-          <div
-            className="hero-dash-enter h-full"
-            role="img"
-            aria-label="The oneth app's Overview in shadow mode: 9 tasks completed today, 14 decisions awaiting review, two escalations that need a person, the daily briefing, decisions this week, four periods ready for sign-off and upcoming VAT deadlines."
-          >
-            <AccountingDashboard variant="full" />
+          <div className="hero-dash-enter h-full" role="region" aria-label="A clickable preview of the oneth app in shadow mode, with fictional data">
+            <HeroApp />
           </div>
         </div>
       </div>
@@ -99,7 +96,7 @@ export default function Hero() {
       <div className="container-x relative pb-20 lg:hidden">
         <div data-hero-compact className="mx-auto max-w-xl">
           <div className="hero-dash-enter" role="img" aria-label="The oneth app's Overview: 9 tasks completed today, 14 decisions awaiting review and the decisions that need a person.">
-            <AccountingDashboard variant="compact" />
+            <AccountingDashboard />
           </div>
         </div>
       </div>

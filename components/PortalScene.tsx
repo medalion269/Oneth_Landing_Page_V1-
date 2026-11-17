@@ -90,7 +90,7 @@ function QuestionCard() {
 }
 
 /** A thumbnail of the photo just taken (the invoice on the countertop), beside the attachment's name. */
-function InvoiceThumb() {
+export function InvoiceThumb() {
   return (
     <span aria-hidden className="cam-surface relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[4px]">
       <span className="invoice-paper flex h-[22px] w-[16px] -rotate-3 flex-col gap-[2px] px-[2px] pt-[3px] text-ink shadow-[0_2px_3px_rgb(0_0_0/0.35)]">
@@ -148,7 +148,7 @@ const INVOICE_COLS = "grid grid-cols-[minmax(0,1fr)_12px_30px_34px_26px_36px] ga
  * The supplier's A4 tax invoice, as printed: letterhead with TRN, invoice details, bill-to with the client's TRN, the
  * lines (prices include VAT, so each shows its taxable amount and VAT), totals, how it was paid, and the footer.
  */
-function InvoicePage() {
+export function InvoicePage() {
   const v = bazaarInvoice;
   return (
     <div className="invoice-paper flex h-[330px] w-[234px] flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px] font-sans text-[5.5px] leading-[7.5px] text-ink">

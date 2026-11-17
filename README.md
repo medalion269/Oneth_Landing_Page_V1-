@@ -92,8 +92,15 @@ app/
   api/apply/route.ts    submission endpoint
 components/
   Navbar.tsx            hides on scroll down, returns on scroll up
-  Hero.tsx              word-by-word headline; the app's Overview rises and fills the screen
-  AccountingDashboard.tsx  the app's Overview (full desktop + compact mobile)
+  Hero.tsx              word-by-word headline; the clickable app rises and fills the screen
+  AccountingDashboard.tsx  the app's Overview: the desktop grid (first screen of hero-app) + compact mobile card
+  hero-app/HeroApp.tsx  the hero's clickable app (desktop): the rail and Overview links switch screens
+  hero-app/screens.tsx  Clients, Work, Decisions, Period close, Knowledge, Performance, Settings
+  hero-app/Guide.tsx    the guided work: invite, one lit click at a time, Skip/Continue/Start over
+  hero-app/DecisionScreen.tsx  a decision (invoice, card payment with the client, two-bill match)
+  hero-app/ClientPhone.tsx, Toasts.tsx  the client answering; confirmations and oneth's new proposal
+  hero-app/useStory.ts, usePageHold.ts, useHeroSignals.ts, spotlight.ts  story actions, page hold, scroll signals, geometry
+  lib/hero-story.ts     the story's state, reducer and the counts every screen shows
   DocumentWorkflow.tsx  Prepare: invoice -> the app's Document card and decision record
   Reconciliation.tsx    Reconcile: the app's Bank lines and Ledger items cards, Needs your review panel
   ApprovalWorkflow.tsx  Review: the app's Decision screen; its decision record writes itself in, a cursor approves

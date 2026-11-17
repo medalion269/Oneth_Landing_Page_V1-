@@ -14,8 +14,27 @@
 
 # misc
 .DS_Store
-*.pem
+Thumbs.db
 npm-debug.log*
+.vercel
+
+# keys and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+
+# python (not used here, kept out just in case)
+.venv/
+venv/
+__pycache__/
+
+# local databases
+*.db
+*.sqlite
+*.sqlite3
 *.tsbuildinfo
 next-env.d.ts
 
