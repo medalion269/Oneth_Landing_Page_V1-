@@ -142,7 +142,7 @@ export default function PilotForm() {
     <section ref={root} id="pilot" aria-labelledby="pilot-title" className="relative overflow-clip py-24 sm:py-32">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(ellipse_60%_50%_at_30%_0%,rgb(3_63_254/0.08),transparent_70%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(ellipse_60%_50%_at_30%_45%,rgb(3_63_254/0.08),transparent_70%)]"
       />
       <div className="container-x relative grid items-start gap-10 lg:grid-cols-[1fr_minmax(0,500px)] lg:gap-x-16 lg:gap-y-10">
         <div data-heading className="lg:col-start-1 lg:row-start-1">
