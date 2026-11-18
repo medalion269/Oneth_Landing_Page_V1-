@@ -6,7 +6,7 @@ import ApprovalWorkflow from "@/components/ApprovalWorkflow";
 import KnowledgeScene from "@/components/KnowledgeScene";
 import PortalScene from "@/components/PortalScene";
 import Features from "@/components/Features";
-import Outlook from "@/components/Outlook";
+import CapacityCheck from "@/components/CapacityCheck";
 import PilotForm from "@/components/PilotForm";
 import Footer from "@/components/Footer";
 import ScrollManager from "@/components/ScrollManager";
@@ -30,7 +30,7 @@ export default function Home() {
         <KnowledgeScene />
         <PortalScene />
         <Features />
-        <Outlook />
+        <CapacityCheck />
         <PilotForm />
       </main>
       <Footer />

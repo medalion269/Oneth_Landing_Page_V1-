@@ -10,9 +10,11 @@ import { requestFormMode, type FormMode } from "@/lib/form-mode";
 
 const links = [
   { href: "#how-it-works", label: "How it works" },
-  { href: "#reconciliation", label: "Reconciliation" },
-  { href: "#review", label: "Review" },
+  // Parts of How it works: left out between 1024 and 1279 so the bar stays on one line
+  { href: "#reconciliation", label: "Reconciliation", wide: true },
+  { href: "#review", label: "Review", wide: true },
   { href: "#features", label: "Features" },
+  { href: "#capacity", label: "Calculator" },
 ];
 
 /**
@@ -58,8 +60,8 @@ export default function Navbar() {
 
           <ul className="hidden items-center gap-1 lg:flex">
             {links.map((l) => (
-              <li key={l.href}>
-                <a href={l.href} onClick={go} className="rounded-full px-3 py-2 text-[14px] text-muted transition-colors hover:text-ink">
+              <li key={l.href} className={"wide" in l ? "hidden xl:block" : undefined}>
+                <a href={l.href} onClick={go} className="whitespace-nowrap rounded-full px-3 py-2 text-[14px] text-muted transition-colors hover:text-ink">
                   {l.label}
                 </a>
               </li>
@@ -68,14 +70,14 @@ export default function Navbar() {
 
           <div className="ml-auto hidden items-center gap-2 lg:flex">
             {signInUrl && (
-              <a href={signInUrl} className="inline-flex rounded-full px-3 py-2 text-[14px] text-muted transition-colors hover:text-ink">
+              <a href={signInUrl} className="inline-flex whitespace-nowrap rounded-full px-3 py-2 text-[14px] text-muted transition-colors hover:text-ink">
                 Sign in
               </a>
             )}
-            <a href="#pilot" onClick={(e) => go(e, "waitlist")} className="inline-flex rounded-full px-3 py-2 text-[14px] font-medium text-ink">
+            <a href="#pilot" onClick={(e) => go(e, "waitlist")} className="inline-flex whitespace-nowrap rounded-full px-3 py-2 text-[14px] font-medium text-ink">
               Join waitlist
             </a>
-            <a href="#pilot" onClick={(e) => go(e, "pilot")} className="btn btn-primary min-h-10! px-4! text-[14px]!">
+            <a href="#pilot" onClick={(e) => go(e, "pilot")} className="btn btn-primary min-h-10! whitespace-nowrap px-4! text-[14px]!">
               Apply for a free pilot
               <IconArrowRight size={15} />
             </a>

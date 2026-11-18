@@ -1,5 +1,7 @@
+import { CLIENT_SIZES, type ClientSize } from "./capacity";
+
 /**
- * Shared validation for the pilot application and waitlist forms.
+ * Shared validation for the pilot application and waitlist forms, and the calculator's report request.
  * Runs in the browser for instant feedback and again in the API route,
  * so the server never trusts client-side checks.
  */
@@ -29,7 +31,20 @@ export interface WaitlistSubmission {
   firmName: string;
 }
 
-export type Submission = PilotSubmission | WaitlistSubmission;
+/** The calculator's "get the PDF" request: who asked, and the answers the report was made from. */
+export interface ReportSubmission {
+  type: "report";
+  email: string;
+  firmName: string;
+  people: number;
+  clients: number;
+  fee: number;
+  size: ClientSize;
+  /** The visitor's own estimate of the routine time saved, in percent */
+  estimate: number;
+}
+
+export type Submission = PilotSubmission | WaitlistSubmission | ReportSubmission;
 export type FieldErrors = Partial<Record<"fullName" | "email" | "firmName" | "firmSize" | "phone" | "form", string>>;
 
 export type ValidationResult = { ok: true; data: Submission } | { ok: false; errors: FieldErrors };
@@ -38,6 +53,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_CHARS_RE = /^\+?[\d\s()-]+$/;
 
 const str = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+/** A whole number within bounds, or null */
+const whole = (v: unknown, min: number, max: number) => (typeof v === "number" && Number.isInteger(v) && v >= min && v <= max ? v : null);
 
 export function validateEmail(email: string): string | undefined {
   if (!email) return "Enter your work email.";
@@ -87,6 +104,22 @@ export function validateSubmission(input: unknown): ValidationResult {
 
     if (Object.keys(errors).length) return { ok: false, errors };
     return { ok: true, data: { type: "pilot", fullName, email, firmName, firmSize: firmSize as FirmSize, phone } };
+  }
+
+  if (type === "report") {
+    const email = str(raw.email, 254).toLowerCase();
+    const firmName = str(raw.firmName, 120);
+    const people = whole(raw.people, 1, 500);
+    const clients = whole(raw.clients, 1, 5_000);
+    const fee = whole(raw.fee, 1, 9_999_999);
+    const size = str(raw.size, 10);
+    const estimate = whole(raw.estimate, 1, 100);
+    const emailError = validateEmail(email);
+    if (people === null || clients === null || fee === null || estimate === null || !Object.hasOwn(CLIENT_SIZES, size)) {
+      return { ok: false, errors: { ...(emailError && { email: emailError }), form: "Some answers are missing. Go back and check them." } };
+    }
+    if (emailError) return { ok: false, errors: { email: emailError } };
+    return { ok: true, data: { type: "report", email, firmName, people, clients, fee, size: size as ClientSize, estimate } };
   }
 
   return { ok: false, errors: { form: "Unknown form type." } };

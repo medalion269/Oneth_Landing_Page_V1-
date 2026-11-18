@@ -109,7 +109,7 @@ components/
   PortalScene.tsx       Client portal: the client answers and sends a photo; the firm's Communications tab updates
   app/ui.tsx            the app's building blocks (rail, top bar, cards, chips, rows, pills) for the mockups
   Features.tsx          six feature cards, supported tools, UAE data commitment
-  Outlook.tsx           one line on where the product is going, just before the form
+  CapacityCheck.tsx     the calculator: five questions, the results, and the PDF report for an email
   PilotForm.tsx         pilot application + waitlist tabs
   Footer.tsx            links and legal line over dunes at sunrise (the sun and its rays rise as the page ends)
   Documents.tsx         invoice, receipt, statement and PDF mockups
@@ -118,6 +118,9 @@ components/
 lib/
   animations.ts         every scroll timeline, one function per section
   app-url.ts            where the "Sign in" links point
+  capacity.ts           the calculator's arithmetic (whole minutes and dirhams, no DOM)
+  capacity-pdf.ts       the calculator's one-page PDF report (pdf-lib, loaded only when asked)
+  report-email.ts       the email the firm gets when someone downloads the report
   demo-data.ts          fictional companies; amounts and VAT derived in code
   validation.ts         shared client and server validation
 ```

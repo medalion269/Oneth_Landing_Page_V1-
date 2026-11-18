@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { FIRM_SIZES, validateSubmission, type Submission, type SubmitResponse } from "@/lib/validation";
+import { reportEmail } from "@/lib/report-email";
 
 /**
  * POST /api/apply
  *
- * Receives pilot applications and waitlist signups.
+ * Receives pilot applications, waitlist signups and the calculator's report requests (the PDF itself is made in the
+ * visitor's browser; this only tells the firm who asked and what they entered).
  * Delivery is chosen from environment variables (see .env.example); the first one configured wins:
  *   1. Supabase (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)
  *   2. Any JSON endpoint (SUBMISSION_ENDPOINT, optional SUBMISSION_ENDPOINT_TOKEN)
@@ -55,6 +57,7 @@ function toEmail(raw: Submission) {
     Object.entries(raw).map(([k, v]) => [k, typeof v === "string" ? oneLine(v) : v]),
   ) as Submission;
   const when = new Date().toLocaleString("en-GB", { timeZone: "Asia/Dubai", dateStyle: "medium", timeStyle: "short" });
+  if (data.type === "report") return reportEmail(data, when);
   if (data.type === "pilot") {
     const size = FIRM_SIZES.find((s) => s.value === data.firmSize)?.label ?? data.firmSize;
     return {
@@ -98,7 +101,8 @@ function toRow(data: Submission) {
       source: "oneth.ai",
     };
   }
-  return { email: data.email, firm_name: data.firmName || null, source: "oneth.ai" };
+  // Report requests join the waitlist table: an email and a firm, marked by where they came from
+  return { email: data.email, firm_name: data.firmName || null, source: data.type === "report" ? "oneth.ai calculator" : "oneth.ai" };
 }
 
 async function store(backend: Exclude<Backend, { kind: "none" }>, data: Submission) {

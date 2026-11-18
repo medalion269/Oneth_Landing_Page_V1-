@@ -958,12 +958,16 @@ export function portalAnimation(root: HTMLElement) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4f. Where this goes: a single line before the form                   */
+/* 4f. The capacity check, before the form                              */
 /* ------------------------------------------------------------------ */
 
-export function outlookAnimation(root: HTMLElement) {
+/** The capacity check: heading and card reveal; the numbers themselves are React state. */
+export function capacityAnimation(root: HTMLElement) {
   const mm = gsap.matchMedia();
-  mm.add(MEDIA.motion, () => revealItems(root));
+  mm.add(MEDIA.motion, () => {
+    revealHeading(root);
+    revealItems(root);
+  });
   return mm;
 }
 

@@ -605,3 +605,19 @@ html[data-hero-app-live] [data-site-nav] {
     }
   }
 }
+
+/* The calculator: each question (and the results) slides in as the visitor moves on (components/CapacityCheck.tsx) */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.step-in {
+  animation: step-in 0.35s var(--ease-out-expo) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-in {
+    animation: none;
+  }
+}

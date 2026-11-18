@@ -7,6 +7,7 @@ const links = [
   { href: "#reconciliation", label: "Reconciliation" },
   { href: "#review", label: "Review" },
   { href: "#features", label: "Features" },
+  { href: "#capacity", label: "Calculator" },
   { href: "#pilot", label: "Free pilot" },
 ];
 
@@ -21,7 +22,7 @@ export default function Footer() {
   return (
     // Below 1024 the tab bar rises by the iPhone's home-indicator inset; the scene rises with it, keeping the sun clear
     <footer className="footer-scene overflow-clip border-t border-line max-lg:pb-[env(safe-area-inset-bottom)]">
-      <div className="container-x pt-14 sm:pt-16">
+      <div className="container-x relative z-10 pt-14 sm:pt-16">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <Wordmark className="h-[28px]" />
@@ -56,8 +57,9 @@ export default function Footer() {
         </div>
       </div>
       {/* The box keeps the scene's proportions (1600 x 520) from 1024 to 1960 wide, so the top of the sky,
-          where the rays have faded out, is never cut. Below 1024 the tab bar covers the nearest dunes, not the sun. */}
-      <div aria-hidden className="mt-4 h-[clamp(300px,32.5vw,640px)] w-full">
+          where the rays have faded out, is never cut. Below 1024 the tab bar covers the nearest dunes, not the sun.
+          It slides up under the text (which sits above it), so the text ends close to the sunrise. */}
+      <div aria-hidden className="pointer-events-none -mt-20 h-[clamp(300px,32.5vw,640px)] w-full">
         <DuneSunrise />
       </div>
     </footer>
