@@ -111,6 +111,7 @@ components/
   Features.tsx          six feature cards, supported tools, UAE data commitment
   Outlook.tsx           one line on where the product is going, just before the form
   PilotForm.tsx         pilot application + waitlist tabs
+  Footer.tsx            links and legal line over dunes at sunrise (the sun and its rays rise as the page ends)
   Documents.tsx         invoice, receipt, statement and PDF mockups
   Stage.tsx             fixed-size design canvas scaled to fit (used by pinned scenes)
   Brand.tsx             the oneth name, wordmark and icon (shared with the app)
@@ -129,6 +130,7 @@ lib/
   - **Mobile and tablet:** no pinning, simpler fade-up reveals, compact UI.
   - **Reduced motion:** no scroll animation. The desktop scenes are shown as static final frames with connectors drawn.
 - The hero's load-in (staggered words, navbar, dashboard rise) is pure CSS, so it never waits on hydration. The dashboard's starting tilt is defined in CSS, and GSAP picks it up from exactly the same values.
+- The footer's sunrise is CSS scroll-driven too (`view-timeline`, `.footer-scene` in `app/globals.css`): no GSAP, and the finished picture with reduced motion or without support.
 - Pinned scenes are laid out on a fixed 1200 x 600 canvas (`Stage`) and scaled to fit. Connector paths are measured with layout offsets, which ignore transforms, and recalculated on every ScrollTrigger refresh.
 - Only `transform`, `opacity` and SVG stroke offsets are animated. Scrolling stays native, with no scroll hijacking.
 

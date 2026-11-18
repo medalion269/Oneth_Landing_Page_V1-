@@ -71,6 +71,7 @@ The user asked for the page to show how the product really works, keeping the fl
 - **Knowledge** (`KnowledgeScene.tsx`): the approval is saved as a precedent and drops into the Precedents tab; the next Desert Line bill (INV-2026-0441) is proposed citing it.
 - **Client portal** (`PortalScene.tsx`): the client's phone shows the portal's Questions tab under the firm's name and colour; the client types an answer, photographs the Bazaar Lane tax invoice and sends. Beside it, the client's Communications tab: the question turns Answered, the reply arrives, then oneth proposes settling the payment against the invoice (`propose_settlement`). The decision itself stays open for a person; there is no "client answered" status in the app.
 - **Where this goes** (`Outlook.tsx`): one line before the form about a live view of each client's cash flow, margins and obligations, framed as something the firm offers.
+- **Footer** (`Footer.tsx`): the page ends on dunes at sunrise. Hairline ridges run the full width; the logo's square is a sun on the horizon whose rays rise and open out as the footer comes into view (CSS scroll-driven, `.footer-scene` in `globals.css`). See `docs/DECISIONS.md`, L10.
 - Left out on purpose: the "You set the limits" (Settings, Permissions) and "Period close" scenes (removed 17 Nov 2026 at the user's request, see `docs/DECISIONS.md` L3), pricing (unvalidated), two-step login and audit-record security claims, "time saved", the build roadmap, lender data sharing, Corporate Tax and e-invoicing cards.
 
 ## How I like to work
@@ -80,10 +81,11 @@ The user asked for the page to show how the product really works, keeping the fl
 
 ## Open items and not yet verified
 - Not tested on a real iPhone or Android. Check the pinned "Scan to ledger" scene in mobile Safari, and whether press-and-hold feels natural.
+- The footer (dunes at sunrise, L10) was checked in Chrome only, at 390, 768, 1366 x 650 and 1440 (the same drawing at 1920 and 2000 in the preview), with reduced motion too. Not yet seen in Safari or Firefox (Playwright WebKit does not start on this PC): look at the rays (gradient-stroked hairlines) and whether the sunrise plays. Without scroll timelines the footer just shows the finished picture.
 - The blue palette was rechecked on every section at 390 and 1440 on 2026-11-16. No violet is left.
 - Rebranded to oneth (name, logo, icon) on 2026-11-17 and rechecked at 390, 768 and 1440. The copy no longer says entries are posted to Zoho Books.
 - Redesigned on 2026-11-17 so the scenes are the app (see above) and checked at 390, 768, 1366 x 650 and 1440, with reduced motion too. The phone stamp is now the app's chip, which fixed the page being 393px wide during Prepare.
-- Known, not yet fixed: the pilot section's glow starts with a hard top edge (`PilotForm.tsx`, gradient centred at 0%), right under the Outlook line.
+- Fixed on 2026-11-18: the pilot section's glow no longer starts with a hard top edge under the Outlook line (`PilotForm.tsx`, the gradient's centre moved from the top edge to 45%).
 - Dev server: something else on this machine uses port 3000, so run `npx next dev -p 3100`. `next dev` also writes `AGENTS.md`, which `.gitignore` ignores.
 - Live at https://oneth.ai (Vercel, from the `medalion269/Oneth_Landing_Page_V1-` repo; see L7 in `docs/DECISIONS.md`). Form delivery is the Resend email (L9), switched on by its variables in the Vercel project; without them the live form runs in development mode.
 - There's no Open Graph image or analytics yet.

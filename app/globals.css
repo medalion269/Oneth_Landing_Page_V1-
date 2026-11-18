@@ -567,3 +567,41 @@ html[data-hero-app-live] [data-site-nav] {
     linear-gradient(90deg, rgb(0 0 0 / 0.05), transparent 8%, transparent 90%, rgb(0 0 0 / 0.07)),
     linear-gradient(160deg, #ffffff 0%, #f8f7f3 55%, #eeece6 100%);
 }
+
+/* ------------------------------------------------------------------ */
+/* Footer: the sun rises behind the dunes and its rays open out as the */
+/* footer comes into view. CSS scroll-driven, keyed to the footer's    */
+/* own entry, so it finishes as the page ends. Without support or with */
+/* reduced motion the footer shows the finished picture.               */
+/* ------------------------------------------------------------------ */
+.footer-scene {
+  view-timeline: --footer block;
+}
+@keyframes footer-sunrise {
+  from {
+    transform: translateY(110px);
+  }
+}
+@keyframes footer-rays-open {
+  from {
+    transform: scale(0.5) rotate(-8deg);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .footer-sunrise {
+      animation: footer-sunrise linear both;
+      animation-timeline: --footer;
+      animation-range: entry 0% entry 100%;
+    }
+    /* Scales and turns about the sun's centre (its group's origin) */
+    .footer-rays {
+      transform-box: view-box;
+      transform-origin: 0 0;
+      animation: footer-rays-open linear both;
+      animation-timeline: --footer;
+      animation-range: entry 30% entry 100%;
+    }
+  }
+}
