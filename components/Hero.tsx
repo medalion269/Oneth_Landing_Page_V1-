@@ -11,8 +11,9 @@ import { requestFormMode } from "@/lib/form-mode";
 
 // Word-by-word reveal: each word gets a global index for its stagger delay.
 const lines = [
-  { words: ["Take", "on", "more", "clients."], className: "" },
-  { words: ["Not", "more", "accountants."], className: "text-muted" },
+  // "client base." stays together (no-break space), so narrow screens never leave "base." alone on a line
+  { words: ["Grow", "your", "client base."], className: "" },
+  { words: ["Not", "your", "payroll."], className: "text-muted" },
 ].map((line, li, all) => {
   const offset = all.slice(0, li).reduce((n, l) => n + l.words.length, 0);
   return { ...line, words: line.words.map((text, wi) => ({ text, i: offset + wi })) };

@@ -12,10 +12,10 @@ const description =
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://oneth.ai"),
-  title: "oneth · Take on more clients. Not more accountants.",
+  title: "oneth · Grow your client base. Not your payroll.",
   description,
   openGraph: {
-    title: "oneth · Take on more clients. Not more accountants.",
+    title: "oneth · Grow your client base. Not your payroll.",
     description,
     url: "https://oneth.ai",
     siteName: "oneth",
