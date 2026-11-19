@@ -43,8 +43,10 @@ function PrecedentRow({
     >
       <IconCircle icon={History} tone={isNew ? "card" : "card"} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="flex items-center gap-2 truncate text-[14px] font-semibold leading-[20px]">
-          {pattern}
+        {/* The name truncates in its own span: text sitting directly in a flex row is clipped without an ellipsis and
+            pushes the New chip out of sight (phones, L15) */}
+        <span className="flex min-w-0 items-center gap-2 text-[14px] font-semibold leading-[20px]">
+          <span className="min-w-0 truncate">{pattern}</span>
           {isNew && (
             <Chip size="sm" tone="accent">
               New

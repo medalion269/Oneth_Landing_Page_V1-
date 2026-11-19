@@ -562,9 +562,10 @@ export function reconciliationAnimation(root: HTMLElement) {
     const rows = $$(scene, "[data-zip-row]");
     const amountEl = $(scene, "[data-zip-amount]");
     const bar = $(scene, "[data-zip-bar]");
+    const tray = $(scene, "[data-zip-tray]");
     const total = Number(scene.dataset.total);
     const final = Number(scene.dataset.final);
-    if (!rowsWrap || !rows.length || !amountEl || !bar || !total) return;
+    if (!rowsWrap || !rows.length || !amountEl || !bar || !tray || !total) return;
 
     const tally = { v: total };
     const render = () => {
@@ -572,9 +573,12 @@ export function reconciliationAnimation(root: HTMLElement) {
     };
     render();
 
+    // From the rows' top at 85% (just above the tab bar) to the tray's top at 80%, so the tray fades in as it rises
+    // above the tab bar. Ending on the rows (their bottom at 40%) left the tray invisible until it was halfway up the
+    // screen: a blank gap under the rows (L15).
     const tl = gsap.timeline({
       defaults: { ease: "none" },
-      scrollTrigger: { trigger: rowsWrap, start: "top 85%", end: "bottom 40%", scrub: 0.6 },
+      scrollTrigger: { trigger: rowsWrap, start: "top 85%", endTrigger: tray, end: "top 80%", scrub: 0.6 },
     });
 
     let remaining = total;
@@ -595,7 +599,7 @@ export function reconciliationAnimation(root: HTMLElement) {
     });
 
     // What could not be matched drops into the accountant's tray
-    tl.fromTo($(scene, "[data-zip-tray]"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, rows.length + 0.1).fromTo(
+    tl.fromTo(tray, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, rows.length + 0.1).fromTo(
       $$(scene, "[data-zip-exception]"),
       { opacity: 0, y: 10 },
       { opacity: 1, y: 0, duration: 0.4, stagger: 0.2 },
@@ -813,13 +817,16 @@ function typeAnswer(tl: gsap.core.Timeline, scope: HTMLElement, t: number) {
     .fromTo($(scope, "[data-pt-send]"), { opacity: 0 }, { opacity: 1, duration: 0.2 }, t + 0.1);
 }
 
-/** The photo is attached: the button gives way to the attachment row. */
+/**
+ * The photo is attached: the button gives way to the attachment row. They share one spot, so the row only starts once
+ * the button is gone: overlapping, a visitor who stops scrolling mid-swap sees both texts on top of each other (L15).
+ */
 function attachPhoto(tl: gsap.core.Timeline, scope: HTMLElement, t: number) {
   tl.fromTo($(scope, "[data-pt-attach]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, t).fromTo(
     $(scope, "[data-pt-attached]"),
     { opacity: 0, y: 6 },
     { opacity: 1, y: 0, duration: 0.35, ease: "back.out(2)" },
-    t + 0.1,
+    t + 0.2,
   );
 }
 
