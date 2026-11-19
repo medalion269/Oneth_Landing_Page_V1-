@@ -254,49 +254,62 @@ function MobileScene() {
           maxScale={1.15}
           label={`A scan line reads the tax invoice from ${invoice.supplier}. The supplier, invoice number, subtotal, VAT and total move into oneth's proposed entry, which balances at AED ${aed(invoice.total)} and waits for review.`}
         >
-          {/* The source invoice */}
-          <div data-scan-doc className="absolute overflow-hidden rounded-xl border border-line bg-paper p-3.5 text-[11px] leading-[1.4] shadow-lift" style={{ left: 20, top: 6, width: 300 }}>
+          {/* The source invoice: the same printed tax invoice as the desktop scene (InvoiceDoc, L22), cut to what fits
+              above the ledger. Paper, not UI, so it keeps the invoice's own inks. */}
+          <div
+            data-scan-doc
+            className="absolute overflow-hidden rounded-[3px] bg-white px-3.5 pb-2.5 pt-2.5 font-sans text-[10px] leading-[1.4] text-[#1d1d20] shadow-[0_0_0_1px_rgb(24_24_27/0.06),0_1px_2px_rgb(0_0_0/0.08),0_14px_30px_-12px_rgb(0_0_0/0.28)]"
+            style={{ left: 10, top: 6, width: 320 }}
+          >
             <div className="flex items-start gap-2">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#1f3a37] text-[9px] font-semibold text-[#e9dcc2]">DL</span>
+              <span className="grid size-7 shrink-0 place-items-center rounded-[4px] bg-[#1f3a37] text-[9px] font-semibold tracking-wide text-[#e9dcc2]">DL</span>
               <div className="min-w-0">
-                <p className="text-[12px] font-semibold leading-tight">
+                <p className="text-[12px] font-bold leading-tight tracking-[-0.01em]">
                   <ScanValue field="supplier">{invoice.supplier}</ScanValue>
                 </p>
-                <p className="tnum mt-0.5 text-[10px] text-muted">TRN {formatTrn(invoice.supplierTrn)}</p>
+                <p className="tnum mt-0.5 font-semibold">TRN {formatTrn(invoice.supplierTrn)}</p>
               </div>
             </div>
-            <div className="mt-2.5 flex items-baseline justify-between">
-              <p className="text-[13px] font-semibold tracking-[-0.02em]">Tax Invoice</p>
-              <p className="tnum text-muted">
-                <ScanValue field="number">{invoice.number}</ScanValue> · {invoice.date}
+            <div className="mt-1.5 h-[2px] rounded-full bg-[#1f3a37]" />
+            <div className="mt-1 flex items-baseline justify-between gap-3">
+              <p className="text-[11.5px] font-bold tracking-[0.06em]">TAX INVOICE</p>
+              <p dir="rtl" lang="ar" className="text-[10.5px] text-[#6b6b72]">
+                فاتورة ضريبية
               </p>
             </div>
-            <div className="mt-2 space-y-1 border-t border-line pt-2">
+            <p className="tnum mt-0.5 text-[#6b6b72]">
+              Invoice no.{" "}
+              <span className="mx-1 font-semibold text-[#1d1d20]">
+                <ScanValue field="number">{invoice.number}</ScanValue>
+              </span>{" "}
+              · Date <span className="font-semibold text-[#1d1d20]">{invoice.date}</span>
+            </p>
+            <div className="mt-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_22px_52px] gap-x-2 rounded-[2px] bg-[#1f3a37] px-1.5 py-[3px] text-[8.5px] font-semibold text-white">
+                <span>Description</span>
+                <span className="text-right">Qty</span>
+                <span className="text-right">Taxable</span>
+              </div>
               {invoice.lines.map((l) => (
-                <div key={l.description} className="flex justify-between gap-3">
-                  <span className="truncate text-muted">{l.description}</span>
-                  <span className="tnum shrink-0">{aed(l.amount)}</span>
+                <div key={l.description} className="tnum grid grid-cols-[minmax(0,1fr)_22px_52px] gap-x-2 border-b border-[#ecebe7] px-1.5 py-[2px] text-[9.5px]">
+                  <span>{l.description}</span>
+                  <span className="text-right">{l.qty}</span>
+                  <span className="text-right">{aed(l.amount)}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-2 space-y-0.5 border-t border-line pt-2">
-              <div className="flex justify-between">
-                <span className="text-muted">Subtotal</span>
-                <span className="tnum">
-                  <ScanValue field="subtotal">{aed(invoice.net)}</ScanValue>
-                </span>
+            <div className="tnum ml-auto mt-1.5 w-[60%] space-y-1">
+              <div className="flex justify-between gap-2">
+                <span className="text-[#6b6b72]">Total taxable amount</span>
+                <ScanValue field="subtotal">{aed(invoice.net)}</ScanValue>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted">VAT 5%</span>
-                <span className="tnum">
-                  <ScanValue field="vat">{aed(invoice.vat)}</ScanValue>
-                </span>
+              <div className="flex justify-between gap-2">
+                <span className="text-[#6b6b72]">VAT at 5%</span>
+                <ScanValue field="vat">{aed(invoice.vat)}</ScanValue>
               </div>
-              <div className="flex justify-between text-[12px] font-semibold">
+              <div className="flex justify-between gap-2 border-t-2 border-[#1f3a37] pt-0.5 text-[11.5px] font-bold">
                 <span>Total AED</span>
-                <span className="tnum">
-                  <ScanValue field="total">{aed(invoice.total)}</ScanValue>
-                </span>
+                <ScanValue field="total">{aed(invoice.total)}</ScanValue>
               </div>
             </div>
             {/* Scan line with a soft glow trailing above it */}

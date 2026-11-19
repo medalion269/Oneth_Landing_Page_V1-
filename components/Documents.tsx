@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
-import { aed, bankTransactions, client, clientUpload, formatTrn, invoice, receipt } from "@/lib/demo-data";
+import { useId, type CSSProperties, type ReactNode } from "react";
+import { aed, bankTransactions, client, clientUpload, formatTrn, invoice, receipt, vatOn } from "@/lib/demo-data";
 
 export type InvoiceField = "supplier" | "trn" | "number" | "date" | "lines" | "subtotal" | "vat" | "total";
 
@@ -25,7 +25,58 @@ export function Hl({
   );
 }
 
-/** A UAE tax invoice from the fictional supplier. 380px wide by default. */
+/**
+ * Paper colours. An invoice is a picture of a printed document, not UI, so it keeps its own inks (as the hero app's
+ * A4 invoice does, hero-app/InvoicePdf.tsx): the supplier's dark green, near-black text, grey labels, and the blue
+ * of a rubber stamp.
+ */
+const PAPER = "text-[#1d1d20]";
+const LABEL = "text-[#6b6b72]";
+const BRAND_BG = "bg-[#1f3a37]";
+
+/** "3727.50" -> "Three thousand seven hundred twenty-seven dirhams and fifty fils only" (amounts under a million). */
+export function amountInWords(n: number) {
+  const ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+  const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  const under100 = (x: number) => (x < 20 ? ones[x] : `${tens[Math.floor(x / 10)]}${x % 10 ? `-${ones[x % 10]}` : ""}`);
+  const under1000 = (x: number) => [x >= 100 ? `${ones[Math.floor(x / 100)]} hundred` : "", x % 100 ? under100(x % 100) : ""].filter(Boolean).join(" ");
+  const whole = Math.floor(n);
+  const fils = Math.round((n - whole) * 100);
+  const words = [whole >= 1000 ? `${under1000(Math.floor(whole / 1000))} thousand` : "", whole % 1000 ? under1000(whole % 1000) : ""].filter(Boolean).join(" ");
+  const text = `${words} dirhams${fils ? ` and ${under100(fils)} fils` : ""} only`;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** The supplier's round company stamp, slightly turned, as it lands on a signed invoice. */
+export function SupplierStamp({ size = 92, className = "" }: { size?: number; className?: string }) {
+  const arc = `stamp-arc-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 92 92" aria-hidden className={`-rotate-12 opacity-80 ${className}`}>
+      <circle cx="46" cy="46" r="43" fill="none" stroke="#2c4aa8" strokeWidth="2.2" />
+      <circle cx="46" cy="46" r="31" fill="none" stroke="#2c4aa8" strokeWidth="1.2" />
+      <path id={arc} d="M 12 46 A 34 34 0 1 1 80 46" fill="none" />
+      <text fontSize="7.6" fontWeight="700" fill="#2c4aa8" letterSpacing="0.6">
+        <textPath href={`#${arc}`} startOffset="50%" textAnchor="middle">
+          DESERT LINE OFFICE SUPPLIES
+        </textPath>
+      </text>
+      <text x="46" y="44" fontSize="8" fontWeight="700" fill="#2c4aa8" textAnchor="middle">
+        L.L.C.
+      </text>
+      <text x="46" y="55" fontSize="7" fill="#2c4aa8" textAnchor="middle">
+        DUBAI · U.A.E.
+      </text>
+    </svg>
+  );
+}
+
+/**
+ * The Desert Line tax invoice as printed paper: letterhead with the supplier's TRN, the bilingual title, bill-to and
+ * invoice details, the lines with the VAT on each (a UAE tax invoice shows it in AED), totals with the amount in words,
+ * the payment terms and the company stamp. Same document as the hero app's A4 PDF, drawn at 380px wide.
+ * `compact` (the Decision screen's Document card, about 300px) keeps what a reviewer checks and fits the card: no
+ * address lines, no unit price, no amount in words, stamp or footer.
+ */
 export function InvoiceDoc({
   highlights = [],
   className = "",
@@ -38,106 +89,155 @@ export function InvoiceDoc({
   compact?: boolean;
 }) {
   const on = (f: InvoiceField) => highlights.includes(f);
+  const lines = invoice.lines.map((l) => ({ ...l, vat: vatOn(l.amount) }));
+  const cols = compact ? "grid grid-cols-[minmax(0,1fr)_20px_50px_38px] gap-x-1.5" : "grid grid-cols-[8px_minmax(0,1fr)_20px_40px_48px_36px] gap-x-1.5";
+  const details: [string, ReactNode][] = [
+    [
+      "Invoice no.",
+      <Hl key="n" field="number" on={on("number")} className="tnum">
+        {invoice.number}
+      </Hl>,
+    ],
+    [
+      "Invoice date",
+      <Hl key="d" field="date" on={on("date")} className="tnum">
+        {invoice.date}
+      </Hl>,
+    ],
+    ["Due date", invoice.due],
+    ...(compact ? [] : ([["Payment terms", invoice.terms]] as [string, ReactNode][])),
+  ];
   return (
     <article
       data-invoice
-      className={`rounded-[10px] border border-line bg-paper text-ink shadow-lift ${compact ? "p-4 text-[11px]" : "p-[22px] text-[10.5px]"} leading-[1.45] ${className}`}
+      className={`rounded-[3px] bg-white font-sans ${PAPER} shadow-[0_0_0_1px_rgb(24_24_27/0.06),0_1px_2px_rgb(0_0_0/0.08),0_14px_30px_-12px_rgb(0_0_0/0.28)] ${compact ? "px-3.5 py-3.5 text-[9.5px]" : "px-5 pb-3.5 pt-5 text-[10px]"} leading-[1.45] ${className}`}
       style={style}
     >
+      {/* Letterhead */}
       <header className="flex items-start gap-2.5">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1f3a37] text-[10px] font-semibold tracking-wide text-[#e9dcc2]">
+        <span className={`grid shrink-0 place-items-center rounded-[5px] ${BRAND_BG} font-semibold tracking-wide text-[#e9dcc2] ${compact ? "size-7 text-[9px]" : "size-9 text-[11px]"}`}>
           DL
         </span>
         <div className="min-w-0">
-          <p className="text-[11.5px] font-semibold leading-tight">
+          <p className={`font-bold leading-tight tracking-[-0.01em] ${compact ? "text-[11px]" : "text-[12.5px]"}`}>
             <Hl field="supplier" on={on("supplier")}>
               {invoice.supplier}
             </Hl>
           </p>
-          <p className="mt-0.5 text-muted">{invoice.supplierAddress}</p>
+          {!compact && (
+            <>
+              <p className={`mt-0.5 ${LABEL}`}>Office and stationery supplies</p>
+              <p className={LABEL}>{invoice.supplierAddress}, UAE</p>
+            </>
+          )}
+          <p className="mt-0.5 font-semibold">
+            TRN{" "}
+            <Hl field="trn" on={on("trn")} className="tnum ml-1">
+              {formatTrn(invoice.supplierTrn)}
+            </Hl>
+          </p>
         </div>
       </header>
+      <div className={`mt-2.5 h-[3px] rounded-full ${BRAND_BG}`} />
 
-      <div className="mt-4 flex items-end justify-between border-b border-line pb-2.5">
-        <p className="text-[15px] font-semibold tracking-[-0.02em]">Tax Invoice</p>
-        <p className="text-muted">
-          TRN{" "}
-          <Hl field="trn" on={on("trn")} className="tnum font-medium text-ink">
-            {formatTrn(invoice.supplierTrn)}
-          </Hl>
+      {/* Title, in English and Arabic */}
+      <div className="mt-2 flex items-baseline justify-between gap-3">
+        <p className={`font-bold tracking-[0.06em] ${compact ? "text-[12px]" : "text-[14px]"}`}>TAX INVOICE</p>
+        <p dir="rtl" lang="ar" className={`${LABEL} ${compact ? "text-[11px]" : "text-[12.5px]"}`}>
+          فاتورة ضريبية
         </p>
       </div>
 
-      <dl className="mt-3 grid grid-cols-3 gap-2">
-        <div>
-          <dt className="text-muted">Invoice no.</dt>
-          <dd className="mt-0.5 font-medium">
-            <Hl field="number" on={on("number")} className="tnum">
-              {invoice.number}
-            </Hl>
-          </dd>
+      {/* Bill to and the invoice details */}
+      <div className="mt-2.5 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 rounded-[3px] border border-[#e3e2de] px-2 py-1.5">
+          <p className={`text-[8px] font-semibold uppercase tracking-[0.08em] ${LABEL}`}>Bill to</p>
+          <p className="font-semibold leading-snug">{client.name}</p>
+          {!compact && <p className={LABEL}>Marina Walk, Dubai Marina</p>}
+          <p className="tnum whitespace-nowrap">TRN {formatTrn(client.trn)}</p>
         </div>
-        <div>
-          <dt className="text-muted">Invoice date</dt>
-          <dd className="mt-0.5 font-medium">
-            <Hl field="date" on={on("date")} className="tnum">
-              {invoice.date}
-            </Hl>
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted">Due date</dt>
-          <dd className="tnum mt-0.5 font-medium">{invoice.due}</dd>
-        </div>
-      </dl>
-
-      <div className="mt-3 rounded-md bg-canvas px-2.5 py-2">
-        <p className="text-muted">Bill to</p>
-        <p className="font-medium">{client.name}</p>
-        <p className="tnum text-muted">TRN {formatTrn(client.trn)} · Dubai, UAE</p>
+        <dl className="grid shrink-0 grid-cols-[auto_auto] gap-x-2.5 text-right">
+          {details.map(([k, v]) => (
+            <div key={k} className="contents">
+              <dt className={LABEL}>{k}</dt>
+              <dd className="tnum font-semibold">{v}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
 
+      {/* Lines */}
       <div className="mt-3">
-        <div className="grid grid-cols-[1fr_34px_50px_64px] gap-2 border-b border-line pb-1.5 text-muted">
+        <div className={`${cols} rounded-[2px] ${BRAND_BG} px-1.5 py-1 text-[8.5px] font-semibold text-white`}>
+          {!compact && <span>#</span>}
           <span>Description</span>
           <span className="text-right">Qty</span>
-          <span className="text-right">Unit</span>
-          <span className="text-right">AED</span>
+          {!compact && <span className="text-right">Unit</span>}
+          <span className="text-right">Taxable</span>
+          <span className="text-right">VAT 5%</span>
         </div>
-        <Hl field="lines" on={on("lines")} as="div">
-          {invoice.lines.map((l) => (
-            <div key={l.description} className="grid grid-cols-[1fr_34px_50px_64px] gap-2 border-b border-line-soft py-1.5">
-              <span className="truncate">{l.description}</span>
-              <span className="tnum text-right">{l.qty}</span>
-              <span className="tnum text-right">{aed(l.unitPrice)}</span>
-              <span className="tnum text-right">{aed(l.amount)}</span>
+        <Hl field="lines" on={on("lines")} as="div" className="block">
+          {lines.map((l, i) => (
+            <div key={l.description} className={`${cols} tnum border-b border-[#ecebe7] px-1.5 py-1.5`}>
+              {!compact && <span className={LABEL}>{i + 1}</span>}
+              <span className="leading-snug">{l.description}</span>
+              <span className="text-right">{l.qty}</span>
+              {!compact && <span className="text-right">{aed(l.unitPrice)}</span>}
+              <span className="text-right">{aed(l.amount)}</span>
+              <span className="text-right">{aed(l.vat)}</span>
             </div>
           ))}
         </Hl>
       </div>
 
-      <div className="ml-auto mt-3 w-[62%] space-y-1">
-        <div className="flex justify-between">
-          <span className="text-muted">Subtotal</span>
-          <Hl field="subtotal" on={on("subtotal")} className="tnum">
-            {aed(invoice.net)}
-          </Hl>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted">VAT 5%</span>
-          <Hl field="vat" on={on("vat")} className="tnum">
-            {aed(invoice.vat)}
-          </Hl>
-        </div>
-        <div className="flex justify-between border-t border-line pt-1.5 text-[12px] font-semibold">
-          <span>Total AED</span>
-          <Hl field="total" on={on("total")} className="tnum">
-            {aed(invoice.total)}
-          </Hl>
+      {/* Totals, with the amount in words beside them */}
+      <div className="mt-2.5 flex items-start justify-between gap-3">
+        {!compact && (
+          <div className="max-w-[150px] pt-0.5">
+            <p className={`text-[8px] font-semibold uppercase tracking-[0.08em] ${LABEL}`}>Amount in words</p>
+            <p className="mt-0.5">{amountInWords(invoice.total)}</p>
+          </div>
+        )}
+        <div className={`tnum space-y-1 ${compact ? "ml-auto w-[68%]" : "w-[168px]"}`}>
+          <div className="flex justify-between gap-2">
+            <span className={LABEL}>Total taxable amount</span>
+            <Hl field="subtotal" on={on("subtotal")}>
+              {aed(invoice.net)}
+            </Hl>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span className={LABEL}>VAT at 5%</span>
+            <Hl field="vat" on={on("vat")}>
+              {aed(invoice.vat)}
+            </Hl>
+          </div>
+          <div className={`flex justify-between gap-2 border-t-2 border-[#1f3a37] pt-1 font-bold ${compact ? "text-[11px]" : "text-[12.5px]"}`}>
+            <span>Total AED</span>
+            <Hl field="total" on={on("total")}>
+              {aed(invoice.total)}
+            </Hl>
+          </div>
         </div>
       </div>
 
-      {!compact && <p className="mt-3 text-[9.5px] text-faint">Payment by bank transfer within {invoice.terms}. Thank you for your business.</p>}
+      {!compact && (
+        <>
+          {/* Payment terms, stamp and signature */}
+          <div className="mt-2 flex items-end justify-between gap-3">
+            <p className={`max-w-[190px] pb-1 ${LABEL}`}>
+              By bank transfer within {invoice.terms} of the invoice date. Please quote {invoice.number} with your payment.
+            </p>
+            <div className="flex flex-col items-center">
+              <SupplierStamp size={56} />
+              <span className={`mt-0.5 w-[92px] border-t border-[#c9c8c3] pt-0.5 text-center text-[8.5px] ${LABEL}`}>Authorised signatory</span>
+            </div>
+          </div>
+          <div className="mt-2 flex justify-between border-t border-[#ecebe7] pt-1.5 text-[8.5px] text-[#8a8a91]">
+            <span>Computer-generated tax invoice. Prices in AED.</span>
+            <span>Page 1 of 1</span>
+          </div>
+        </>
+      )}
     </article>
   );
 }

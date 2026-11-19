@@ -244,7 +244,11 @@ function DesktopScene() {
           </p>
           <div className="grid min-h-0 flex-1 grid-cols-12 grid-rows-[minmax(0,1fr)] gap-4">
             <AppCard data-ap-doc title="Document" className="col-span-4 h-full overflow-hidden">
-              <InvoiceDoc highlights={["lines", "trn", "vat", "total"]} compact className="shadow-none!" />
+              <InvoiceDoc
+                highlights={["lines", "trn", "vat", "total"]}
+                compact
+                className="shadow-[0_0_0_1px_rgb(24_24_27/0.08),0_6px_16px_-8px_rgb(0_0_0/0.18)]!"
+              />
             </AppCard>
             <RecordCard />
             <ActionsAndHistory />

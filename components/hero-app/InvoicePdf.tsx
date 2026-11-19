@@ -9,26 +9,13 @@
  */
 
 import { Download, FileText, Minus, Plus } from "lucide-react";
-import { Hl } from "../Documents";
+import { Hl, SupplierStamp, amountInWords } from "../Documents";
 import { ICON_SM } from "../app/ui";
 import { aed, client, formatTrn, invoice } from "@/lib/demo-data";
 import { Scaled } from "./Scaled";
 
 const PAGE_W = 560;
 const PAGE_H = 792;
-
-/** "3727.50" -> "Three thousand seven hundred twenty-seven dirhams and fifty fils only" (amounts under a million). */
-function inWords(n: number) {
-  const ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
-  const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
-  const under100 = (x: number) => (x < 20 ? ones[x] : `${tens[Math.floor(x / 10)]}${x % 10 ? `-${ones[x % 10]}` : ""}`);
-  const under1000 = (x: number) => [x >= 100 ? `${ones[Math.floor(x / 100)]} hundred` : "", x % 100 ? under100(x % 100) : ""].filter(Boolean).join(" ");
-  const whole = Math.floor(n);
-  const fils = Math.round((n - whole) * 100);
-  const words = [whole >= 1000 ? `${under1000(Math.floor(whole / 1000))} thousand` : "", whole % 1000 ? under1000(whole % 1000) : ""].filter(Boolean).join(" ");
-  const text = `${words} dirhams${fils ? ` and ${under100(fils)} fils` : ""} only`;
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
 
 const COLS = "grid grid-cols-[14px_minmax(0,1fr)_26px_56px_66px_52px_72px] gap-x-1.5";
 
@@ -118,7 +105,7 @@ function Page() {
       <div className="mt-4 flex justify-between gap-6">
         <div className="flex max-w-[230px] flex-col gap-1 pt-1 text-[#6b6b72]">
           <span className="text-[9.5px] font-semibold uppercase tracking-[0.08em]">Amount in words</span>
-          <span className="text-[#1d1d20]">{inWords(invoice.total)}</span>
+          <span className="text-[#1d1d20]">{amountInWords(invoice.total)}</span>
         </div>
         <div className="flex w-[220px] flex-col gap-1 tabular-nums">
           <span className="flex justify-between">
@@ -150,22 +137,7 @@ function Page() {
           <span>Goods received in good condition and checked at delivery.</span>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <svg width="92" height="92" viewBox="0 0 92 92" aria-hidden className="-rotate-12 opacity-80">
-            <circle cx="46" cy="46" r="43" fill="none" stroke="#2c4aa8" strokeWidth="2.2" />
-            <circle cx="46" cy="46" r="31" fill="none" stroke="#2c4aa8" strokeWidth="1.2" />
-            <path id="stamp-arc" d="M 12 46 A 34 34 0 1 1 80 46" fill="none" />
-            <text fontSize="7.6" fontWeight="700" fill="#2c4aa8" letterSpacing="0.6">
-              <textPath href="#stamp-arc" startOffset="50%" textAnchor="middle">
-                DESERT LINE OFFICE SUPPLIES
-              </textPath>
-            </text>
-            <text x="46" y="44" fontSize="8" fontWeight="700" fill="#2c4aa8" textAnchor="middle">
-              L.L.C.
-            </text>
-            <text x="46" y="55" fontSize="7" fill="#2c4aa8" textAnchor="middle">
-              DUBAI · U.A.E.
-            </text>
-          </svg>
+          <SupplierStamp />
           <span className="w-[120px] border-t border-[#c9c8c3] pt-1 text-center text-[10px] text-[#6b6b72]">Authorised signatory</span>
         </div>
       </div>
