@@ -9,7 +9,7 @@ import { FIRM_SIZES, validateSubmission, type FieldErrors, type SubmitResponse }
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-const terms = ["Free pilot", "One client", "One month", "No cost", "No commitment"];
+const terms = ["One client", "1 month", "No cost", "No commitment"];
 
 const steps: { title: string; body: ReactNode }[] = [
   { title: "Pick one client", body: "Choose a client whose books you know well, so you can judge the results." },
@@ -153,13 +153,19 @@ export default function PilotForm() {
           <p className="mt-5 max-w-lg text-pretty text-[clamp(1rem,1.2vw,1.125rem)] leading-relaxed text-muted">
             Pick one client. We&apos;ll process one month of their books alongside your team. You decide whether it helps.
           </p>
-          <ul className="mt-7 flex flex-wrap gap-2" aria-label="Pilot terms">
-            {terms.map((t) => (
-              <li key={t} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-3.5 py-1.5 text-[14px] font-medium shadow-soft">
-                <IconCheck size={14} className="text-accent" /> {t}
-              </li>
-            ))}
-          </ul>
+          {/* One line from 360px phones up: chips size to their column (phones, and the narrow column at 1024px), ticks only when there is room */}
+          <div className="@container mt-7">
+            <ul className="flex flex-wrap gap-1 @min-[23rem]:gap-1.5" aria-label="Pilot terms">
+              {terms.map((t) => (
+                <li
+                  key={t}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-paper px-2 py-1 text-[12px] font-medium shadow-soft @min-[23rem]:px-2.5 @min-[23rem]:py-1.5 @min-[23rem]:text-[13px] @lg:px-3.5 @lg:text-[14px]"
+                >
+                  <IconCheck size={14} className="hidden text-accent @lg:block" /> {t}
+                </li>
+              ))}
+            </ul>
+          </div>
           <p className="mt-6 inline-flex items-center gap-2 text-[14px] text-muted">
             <span className="live-dot h-2 w-2 rounded-full bg-accent" /> Limited pilot spots for UAE firms
           </p>
