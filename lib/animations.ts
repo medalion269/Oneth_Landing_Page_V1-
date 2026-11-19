@@ -253,23 +253,6 @@ export function heroAnimation(root: HTMLElement, spacer?: HTMLElement | null) {
     };
   });
 
-  mm.add(MEDIA.mobile, () => {
-    const compact = $(root, "[data-hero-compact]");
-    if (!compact) return;
-    // A small echo of the desktop move: the product card starts tilted back and settles flat as you scroll.
-    gsap.fromTo(
-      compact,
-      { rotationX: 16, y: 24, scale: 0.96, transformPerspective: 1100, transformOrigin: "50% 0%" },
-      {
-        rotationX: 0,
-        y: -12,
-        scale: 1,
-        ease: "none",
-        scrollTrigger: { trigger: compact, start: "top bottom", end: "top 25%", scrub: 0.6 },
-      },
-    );
-  });
-
   return mm;
 }
 
@@ -987,52 +970,6 @@ export function featuresAnimation(root: HTMLElement) {
       onLeaveBack: (els) => gsap.to(els, { opacity: 0, y: 44, duration: 0.4, overwrite: true }),
     });
     revealItems(root);
-  });
-
-  // Phones: "A month, cleared". Each line ticks from To do to Prepared as it reaches
-  // the upper part of the screen, and unticks when you scroll back above it.
-  mm.add("(max-width: 639.98px) and (prefers-reduced-motion: no-preference)", () => {
-    const month = $(root, "[data-month]");
-    if (!month) return;
-    const rows = $$(month, "[data-month-row]");
-    const count = $(month, "[data-month-count]");
-    const bar = $(month, "[data-month-bar]");
-    const total = rows.length;
-    let done = 0;
-    const render = () => {
-      if (count) count.textContent = String(done);
-      gsap.to(bar, { scaleX: done / total, duration: 0.5, ease: "power2.out", overwrite: true });
-    };
-    gsap.set(bar, { scaleX: 0 });
-    if (count) count.textContent = "0";
-
-    rows.forEach((row) => {
-      const tick = gsap
-        .timeline({ paused: true })
-        .fromTo($(row, "[data-month-box]"), { backgroundColor: "#FFFFFF", borderColor: "#D4D3CF" }, { backgroundColor: "#033FFE", borderColor: "#033FFE", duration: 0.25 })
-        .fromTo($(row, "[data-month-tick]"), { scale: 0, opacity: 0, transformOrigin: "50% 50%" }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(2.5)" }, "<0.05")
-        .fromTo($(row, "[data-month-todo]"), { opacity: 1 }, { opacity: 0, duration: 0.2 }, "<")
-        .fromTo($(row, "[data-month-done]"), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, "<0.05")
-        .fromTo($(row, "[data-month-detail]"), { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: 0.3 }, "<0.05");
-      ScrollTrigger.create({
-        trigger: row,
-        start: "top 70%",
-        onEnter: () => {
-          tick.play();
-          done += 1;
-          render();
-        },
-        onLeaveBack: () => {
-          tick.reverse();
-          done -= 1;
-          render();
-        },
-      });
-    });
-
-    return () => {
-      if (count) count.textContent = String(total);
-    };
   });
   return mm;
 }

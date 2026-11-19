@@ -5,10 +5,12 @@
 /* Phones and tablets with motion allowed (scroll-held mobile scenes). Mirrors MEDIA.mobile. */
 @custom-variant motion-mobile (@media (max-width: 1023.98px) and (prefers-reduced-motion: no-preference));
 
-/* Feature card "lit" state: hover on pointer devices, or the card in view in the mobile carousel */
+/* Feature card "lit" state: hover on pointer devices, or the card in view in the phone row (Features.tsx) */
 @custom-variant card-on {
-  &:is(.group[data-active="true"] *) {
-    @slot;
+  @media (max-width: 639.98px) {
+    &:is(.group[data-active="true"] *) {
+      @slot;
+    }
   }
   @media (hover: hover) {
     &:is(.group:hover *) {

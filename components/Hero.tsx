@@ -98,7 +98,7 @@ export default function Hero() {
 
         {/* Mobile and tablet: compact, readable product UI */}
         <div className="container-x relative pb-20 lg:hidden">
-          <div data-hero-compact className="mx-auto max-w-xl">
+          <div className="mx-auto max-w-xl">
             <div className="hero-dash-enter" role="img" aria-label="The oneth app's Overview: 9 tasks completed today, 14 decisions awaiting review and the decisions that need a person.">
               <AccountingDashboard />
             </div>

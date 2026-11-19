@@ -40,3 +40,6 @@ next-env.d.ts
 
 # written by `next dev` on every start
 AGENTS.md
+
+# /brag video working files (the finished video lives in public/)
+/brag-output*/

@@ -1,9 +1,10 @@
 import { CalendarClock, FileQuestion, FileText, Link2, Percent, Sparkles, type LucideIcon } from "lucide-react";
 import { Wordmark } from "./Brand";
-import { AppCard, Chip, ConfidenceBar, ICON_SM, ListRow, PillButton, ShadowModePill, StatTile, type RailSection } from "./app/ui";
+import { AppCard, Chip, ConfidenceBar, ICON_SM, ListRow, PillButton, StatTile, type RailSection } from "./app/ui";
 import {
   DECISION_STATE_LABEL,
   aed,
+  client,
   decisionsByDay,
   readyForSignoff,
   runningTasks,
@@ -37,17 +38,16 @@ const pct = (r: number) => `${Math.round(r * 100)}%`;
  * Today. On desktop the card shares a row with Needs you, which is taller, so instead of leaving that height empty it
  * lists the tasks behind "Working on 2 now", as the app's Work in progress card shows them (type · client, progress).
  */
-function Today({ compact = false, t = INITIAL_VIEW.today }: { compact?: boolean; t?: View["today"] }) {
+function Today({ t = INITIAL_VIEW.today }: { t?: View["today"] }) {
   return (
-    <AppCard title="Today" className={compact ? "" : "col-span-4"}>
+    <AppCard title="Today" className="col-span-4">
       <div className="flex flex-col gap-1">
         <StatTile surface="plain" size="hero" label="oneth completed today" value={`${t.tasksDone} tasks`} />
         <Chip size="sm" tone="accent" className="self-start">
           Working on {t.tasksRunning} now
         </Chip>
       </div>
-      {!compact && (
-        <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-2">
           {runningTasks.map((task) => (
             <li key={task.type} className="flex items-center gap-3 rounded-app-tile bg-line-soft px-4 py-2.5">
               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -64,8 +64,7 @@ function Today({ compact = false, t = INITIAL_VIEW.today }: { compact?: boolean;
             </li>
           ))}
         </ul>
-      )}
-      <div className={`grid grid-cols-3 gap-2 ${compact ? "" : "mt-auto"}`}>
+      <div className="mt-auto grid grid-cols-3 gap-2">
         {/* Labels can wrap on narrower screens; the numbers stay on one baseline */}
         <StatTile label="Awaiting review" value={t.awaitingReview} className="justify-between" />
         <StatTile label="Auto-decided" value={pct(t.autoDecided)} className="justify-between" />
@@ -76,14 +75,10 @@ function Today({ compact = false, t = INITIAL_VIEW.today }: { compact?: boolean;
 }
 
 function NeedsYou({
-  rows = 5,
-  stacked = false,
   className = "",
   go,
   items = INITIAL_VIEW.needsYou,
 }: {
-  rows?: number;
-  stacked?: boolean;
   className?: string;
   go?: Go;
   items?: View["needsYou"];
@@ -91,11 +86,10 @@ function NeedsYou({
   return (
     <AppCard title="Needs you" open onOpen={go && (() => go("decisions"))} openLabel="Open Decisions" className={className}>
       <div className="flex flex-col gap-2">
-        {items.slice(0, rows).map((d) => (
+        {items.slice(0, 5).map((d) => (
           <ListRow
             key={d.issue}
             data-guide={d.id === "desert" ? "row-desert" : undefined}
-            stacked={stacked}
             icon={KIND_ICON[d.kind]}
             iconTone={d.state === "escalated" ? "blocked" : "card"}
             title={d.issue}
@@ -223,19 +217,73 @@ export function OverviewGrid({ go, view = INITIAL_VIEW }: { go?: Go; view?: View
   );
 }
 
-/** Phones: the app is desktop-first, so the phone shows its two most useful cards under a compact bar. */
+/**
+ * Phones and tablets: the app is desktop-first, so the hero shows one flat card with the Overview's two most useful
+ * parts, Today and the top of Needs you, in their starting state. One box, divided by hairlines (no tiles inside cards
+ * inside a frame), short enough to fit a phone screen above the tab bar.
+ */
 function CompactDashboard() {
+  const t = INITIAL_VIEW.today;
+  const stats = [
+    { label: "Awaiting review", value: t.awaitingReview },
+    { label: <span className="whitespace-nowrap max-[359px]:whitespace-normal">Auto-decided</span>, value: pct(t.autoDecided) },
+    { label: "Overturn rate", value: pct(t.overturnRate) },
+  ];
+  // "Saffron Grove Restaurants LLC" would be cut off on a phone; the app's short name fits
+  const short = (name: string) => (name === client.name ? client.short : name.replace(/\s+(FZ-LLC|FZE|LLC)$/, ""));
   return (
-    <div className="overflow-hidden rounded-[24px] border border-line bg-canvas font-app text-ink antialiased shadow-lift">
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <Wordmark className="h-[18px]" />
-        <span className="origin-right scale-90">
-          <ShadowModePill />
+    <div className="overflow-hidden rounded-app-card border border-line bg-paper font-app text-ink antialiased shadow-lift">
+      <div className="flex items-center justify-between gap-3 border-b border-line-soft px-5 py-3">
+        <Wordmark className="h-[17px]" />
+        <span className="inline-flex h-8 items-center gap-2 rounded-full bg-accent-soft px-3 text-[12px] font-semibold text-accent-ink">
+          <span className="size-1.5 rounded-full bg-accent" />
+          Shadow mode
         </span>
       </div>
-      <div className="flex flex-col gap-3 px-3 pb-3">
-        <Today compact />
-        <NeedsYou rows={3} stacked />
+
+      <div className="px-5 pb-5 pt-4">
+        <p className="text-[15px] font-semibold leading-[22px]">Today</p>
+        <p className="mt-3 text-[13px] leading-[18px] text-muted">oneth completed today</p>
+        <p className="text-[36px] font-semibold leading-[44px] tracking-[-0.02em] tabular-nums">{t.tasksDone} tasks</p>
+        <Chip size="sm" tone="accent" className="mt-1">
+          Working on {t.tasksRunning} now
+        </Chip>
+        <div className="mt-5 grid grid-cols-[5fr_6fr_6fr] divide-x divide-line-soft border-t border-line-soft pt-4">
+          {stats.map((s, i) => (
+            <div key={i} className="flex flex-col gap-1 px-2.5 first:pl-0 last:pr-0">
+              <span className="text-[24px] font-semibold leading-[30px] tracking-[-0.015em] tabular-nums">{s.value}</span>
+              <span className="text-[12px] leading-[17px] text-muted">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-line-soft px-5 pt-4">
+        <p className="text-[15px] font-semibold leading-[22px]">Needs you</p>
+        <ul className="divide-y divide-line-soft">
+          {INITIAL_VIEW.needsYou.slice(0, 2).map((d) => {
+            const Icon = KIND_ICON[d.kind];
+            return (
+              <li key={d.issue} className="flex gap-3 py-4">
+                <span
+                  className={`grid size-8 shrink-0 place-items-center rounded-full ${d.state === "escalated" ? "bg-blocked-soft text-blocked" : "bg-line-soft text-ink"}`}
+                >
+                  <Icon size={16} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-[14px] font-semibold leading-[19px]">{d.issue}</p>
+                  <p className="mt-0.5 truncate text-[12.5px] leading-[17px] text-muted">
+                    {short(d.client)} · {DECISION_STATE_LABEL[d.state]}
+                  </p>
+                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                    <span className="whitespace-nowrap text-[13.5px] font-semibold tabular-nums">AED {aed(d.amount)}</span>
+                    <ConfidenceBar value={d.confidence} />
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ComponentType, type ReactNode } from "react";
+import { useRef, useState, type ComponentType, type ReactNode } from "react";
 import SectionHeading from "./SectionHeading";
 import { IconBank, IconCalendarCheck, IconCheck, IconDoc, IconMessage, IconPercent, IconPin, IconSpark } from "./icons";
 import { featuresAnimation, useGSAP } from "@/lib/animations";
@@ -160,45 +160,39 @@ function CloseArt() {
   );
 }
 
-const features: { title: string; month: string; body: string; icon: ComponentType<{ size?: number }>; art: ReactNode }[] = [
+const features: { title: string; body: string; icon: ComponentType<{ size?: number }>; art: ReactNode }[] = [
   {
     title: "Invoice and receipt processing",
-    month: "48 documents read for this client",
     body: "Reads supplier invoices, receipts and client PDFs, and picks out dates, amounts, VAT and TRNs.",
     icon: IconDoc,
     art: <InvoiceArt />,
   },
   {
     title: "Transaction categorisation",
-    month: "Accounts suggested from your past coding",
     body: "Suggests accounts from your chart of accounts, based on how your team coded similar items.",
     icon: IconSpark,
     art: <CategoriseArt />,
   },
   {
     title: "Bank reconciliation",
-    month: "4 of 6 bank lines matched, 2 flagged for you",
     body: "Matches bank lines to invoices and bills, and flags the ones that need a person.",
     icon: IconBank,
     art: <ReconcileArt />,
   },
   {
     title: "UAE VAT preparation",
-    month: "Standard rated, zero rated and exempt split",
     body: "Separates standard rated, zero rated and exempt amounts so your VAT return review starts organised.",
     icon: IconPercent,
     art: <VatArt />,
   },
   {
     title: "Missing document requests",
-    month: "1 receipt request drafted for Omar",
     body: "Finds transactions without support and drafts the request to your client for you to send.",
     icon: IconMessage,
     art: <RequestArt />,
   },
   {
     title: "Month-end close",
-    month: "Checklist ready for your sign-off",
     body: "Shows what is done, what is waiting on the client and what needs review, client by client.",
     icon: IconCalendarCheck,
     art: <CloseArt />,
@@ -207,64 +201,27 @@ const features: { title: string; month: string; body: string; icon: ComponentTyp
 
 const support = ["AED", "UAE VAT workflows", "Zoho Books", "Xero", "TallyPrime"];
 
-/**
- * Phones: "A month, cleared". One client's November to-do list. As you scroll,
- * each line ticks over from To do to Prepared, with what was prepared for it,
- * and the month fills up. Prepared means ready for the team to review.
- * Markup is the finished month; lib/animations.ts plays the ticking.
- */
-function MonthCleared() {
-  return (
-    <div data-month className="mt-10 sm:hidden">
-      <div data-reveal className="card overflow-hidden">
-        <div className="border-b border-line px-4 pb-3.5 pt-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-[15px] font-semibold tracking-[-0.015em]">November close</p>
-            <p className="tnum text-[12.5px] text-muted">
-              <span data-month-count>{features.length}</span> of {features.length} prepared
-            </p>
-          </div>
-          <p className="mt-0.5 text-[12.5px] text-muted">{client.name}</p>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line-soft">
-            <span data-month-bar className="block h-full origin-left rounded-full bg-accent" />
-          </div>
-        </div>
-        <ul>
-          {features.map((f) => (
-            <li key={f.title} data-month-row className="flex gap-3 border-b border-line-soft px-4 py-3.5 last:border-0">
-              <span data-month-box className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border border-accent bg-accent text-white">
-                <IconCheck data-month-tick size={12} strokeWidth={2.8} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-[14.5px] font-semibold leading-snug tracking-[-0.01em]">{f.title}</h3>
-                  <span className="stack shrink-0">
-                    <span data-month-todo className="pill pill-neutral justify-self-end text-[10.5px]!" style={{ opacity: 0 }}>
-                      To do
-                    </span>
-                    <span data-month-done className="pill pill-accent justify-self-end text-[10.5px]!">
-                      Prepared
-                    </span>
-                  </span>
-                </div>
-                <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{f.body}</p>
-                <p data-month-detail className="mt-1.5 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-accent-ink">
-                  <f.icon size={13} /> {f.month}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <p className="border-t border-line bg-canvas/60 px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-          Prepared means ready for your team to review. Nothing is final until someone approves it.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export default function Features() {
   const root = useRef<HTMLElement>(null);
+  const row = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  /** Phones: the card whose left edge is nearest the row's start is the one in view */
+  const step = (el: HTMLElement) => {
+    const [a, b] = [el.children[0] as HTMLElement, el.children[1] as HTMLElement];
+    return b.offsetLeft - a.offsetLeft;
+  };
+  const onScroll = () => {
+    const el = row.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    setActive(Math.min(features.length - 1, Math.max(0, Math.round(el.scrollLeft / step(el)))));
+  };
+  const show = (i: number) => {
+    const el = row.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollTo({ left: i * step(el), behavior: reduce ? "auto" : "smooth" });
+  };
 
   useGSAP(
     () => {
@@ -282,15 +239,23 @@ export default function Features() {
           The repetitive parts of bookkeeping, prepared for your team to check. Your accountants stay in charge of every decision.
         </SectionHeading>
 
-        <MonthCleared />
-
-        {/* Tablets and desktop: a grid of cards */}
-        <div className="mt-14 hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => (
+        {/* Phones: a row of cards to swipe through, the next one peeking in, with dots below; the card in view lights
+            its illustration (`card-on`). Tablets and desktop: the same cards as a grid. */}
+        <div
+          ref={row}
+          onScroll={onScroll}
+          role="group"
+          aria-label="Features"
+          tabIndex={0}
+          className="relative -mx-5 mt-10 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1 outline-none [scrollbar-width:none] focus-visible:ring-4 focus-visible:ring-accent/15 sm:mx-0 sm:mt-14 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:p-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden"
+        >
+          {features.map((f, i) => (
             <article
               key={f.title}
               data-feature
-              className="group card relative flex flex-col overflow-hidden p-5 transition-[translate,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[#dcdad5] hover:shadow-lift"
+              data-active={i === active}
+              aria-label={`${i + 1} of ${features.length}: ${f.title}`}
+              className="group card relative flex w-[84%] shrink-0 snap-start flex-col overflow-hidden p-5 transition-[translate,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[#dcdad5] hover:shadow-lift sm:w-auto"
             >
               <div aria-hidden className="grid h-44 place-items-center rounded-xl border border-line-soft bg-canvas">
                 {f.art}
@@ -303,6 +268,20 @@ export default function Features() {
               </div>
               <p className="mt-2.5 text-[14.5px] leading-relaxed text-muted">{f.body}</p>
             </article>
+          ))}
+        </div>
+        <div className="mt-3 flex justify-center sm:hidden">
+          {features.map((f, i) => (
+            <button
+              key={f.title}
+              type="button"
+              onClick={() => show(i)}
+              aria-label={`Show ${f.title}`}
+              aria-current={i === active}
+              className="grid h-6 place-items-center px-1"
+            >
+              <span className={`block h-1.5 rounded-full transition-all duration-300 ${i === active ? "w-5 bg-ink" : "w-1.5 bg-line"}`} />
+            </button>
           ))}
         </div>
 
