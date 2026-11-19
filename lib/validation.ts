@@ -1,4 +1,4 @@
-import { CLIENT_SIZES, type ClientSize } from "./capacity";
+import { LIMITS } from "./capacity";
 
 /**
  * Shared validation for the pilot application and waitlist forms, and the calculator's report request.
@@ -36,12 +36,9 @@ export interface ReportSubmission {
   type: "report";
   email: string;
   firmName: string;
-  people: number;
+  accountants: number;
   clients: number;
   fee: number;
-  size: ClientSize;
-  /** The visitor's own estimate of the routine time saved, in percent */
-  estimate: number;
 }
 
 export type Submission = PilotSubmission | WaitlistSubmission | ReportSubmission;
@@ -109,17 +106,16 @@ export function validateSubmission(input: unknown): ValidationResult {
   if (type === "report") {
     const email = str(raw.email, 254).toLowerCase();
     const firmName = str(raw.firmName, 120);
-    const people = whole(raw.people, 1, 500);
-    const clients = whole(raw.clients, 1, 5_000);
-    const fee = whole(raw.fee, 1, 9_999_999);
-    const size = str(raw.size, 10);
-    const estimate = whole(raw.estimate, 1, 100);
+    const answer = (k: keyof typeof LIMITS) => whole(raw[k], LIMITS[k].min, LIMITS[k].max);
+    const accountants = answer("accountants");
+    const clients = answer("clients");
+    const fee = answer("fee");
     const emailError = validateEmail(email);
-    if (people === null || clients === null || fee === null || estimate === null || !Object.hasOwn(CLIENT_SIZES, size)) {
+    if (accountants === null || clients === null || fee === null) {
       return { ok: false, errors: { ...(emailError && { email: emailError }), form: "Some answers are missing. Go back and check them." } };
     }
     if (emailError) return { ok: false, errors: { email: emailError } };
-    return { ok: true, data: { type: "report", email, firmName, people, clients, fee, size: size as ClientSize, estimate } };
+    return { ok: true, data: { type: "report", email, firmName, accountants, clients, fee } };
   }
 
   return { ok: false, errors: { form: "Unknown form type." } };

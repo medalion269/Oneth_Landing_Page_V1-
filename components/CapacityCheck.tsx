@@ -8,47 +8,25 @@ import { capacityAnimation, ScrollTrigger, useGSAP } from "@/lib/animations";
 import { onAnchorClick } from "@/lib/scroll";
 import { requestFormMode } from "@/lib/form-mode";
 import { validateEmail, type SubmitResponse } from "@/lib/validation";
-import {
-  CLIENT_HOURS_PER_PERSON,
-  CLIENT_SIZES,
-  COMFORTABLY_FULL,
-  HOURS_PER_VAT_RETURN,
-  MINUTES_PER_BANK_LINE,
-  MINUTES_PER_PURCHASE_BILL,
-  MINUTES_PER_SALES_INVOICE,
-  NBSP,
-  group,
-  headline,
-  hours,
-  today,
-  todayLine,
-  transactions,
-  withFreedTime,
-  type ClientSize,
-  type Firm,
-} from "@/lib/capacity";
+import { HOURS_PER_WEEK, LIMITS, NBSP, ONETH_ESTIMATE, capacity, group, headline, hours, workings, type Firm } from "@/lib/capacity";
 
 /*
- * The calculator, as a short form: five questions one at a time (people, clients, average fee, a typical client's
- * size, and the visitor's own estimate of the routine time saved), then the answer, then the same answer as a PDF in
- * exchange for an email. The estimate is never preset: no time-saving claims. The PDF is made in the browser
- * (lib/capacity-pdf.ts); the email and answers go to the firm through /api/apply like the other forms.
+ * The calculator, as a short form: three questions one at a time (accountants, clients, the average fee; L18), then
+ * the answer, then the same answer as a PDF in exchange for an email. Everything else is ours and the page says so: a
+ * typical UAE office week (HOURS_PER_WEEK) and oneth's labelled estimate of the time it takes off a client's month
+ * (ONETH_ESTIMATE, L17). The results lay the sums out in the order the user drew them on a whiteboard (L16). The PDF is
+ * made in the browser (lib/capacity-pdf.ts); the email and answers go to the firm through /api/apply.
  */
 
-type Answers = { people: number | null; clients: number | null; fee: number | null; size: ClientSize | null; estimate: number | null };
-const EMPTY: Answers = { people: null, clients: null, fee: null, size: null, estimate: null };
-const QUESTIONS = 5;
-const GUESSES = [
-  { value: 10, label: "A little" },
-  { value: 25, label: "About a quarter" },
-  { value: 50, label: "About half" },
-];
+type Answers = { accountants: number | null; clients: number | null; fee: number | null };
+const EMPTY: Answers = { accountants: null, clients: null, fee: null };
+const QUESTIONS = 3;
 
 const done = (a: Answers): a is { [K in keyof Answers]: NonNullable<Answers[K]> } =>
-  a.people !== null && a.clients !== null && a.fee !== null && a.size !== null && a.estimate !== null;
+  a.accountants !== null && a.clients !== null && a.fee !== null;
 
 /** One question: the big title, a line of help, and the answer underneath. */
-function Question({ n, title, help, htmlFor, children }: { n: number; title: string; help: ReactNode; htmlFor?: string; children: ReactNode }) {
+function Question({ n, title, help, htmlFor, children }: { n: number; title: ReactNode; help: ReactNode; htmlFor?: string; children: ReactNode }) {
   const Title = htmlFor ? "label" : "legend";
   return (
     <fieldset className="min-w-0">
@@ -63,7 +41,7 @@ function Question({ n, title, help, htmlFor, children }: { n: number; title: str
 }
 
 /** A big whole-number field with minus and plus, shown with thousands separators except while it is being edited. */
-function NumberAnswer({ id, value, onChange, min, max, step = 1, prefix, placeholder }: {
+function NumberAnswer({ id, value, onChange, min, max, step = 1, prefix, suffix, placeholder }: {
   id: string;
   value: number | null;
   onChange: (n: number | null) => void;
@@ -71,6 +49,8 @@ function NumberAnswer({ id, value, onChange, min, max, step = 1, prefix, placeho
   max: number;
   step?: number;
   prefix?: string;
+  /** The unit after the number, like "hours" */
+  suffix?: string;
   placeholder: string;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -93,7 +73,7 @@ function NumberAnswer({ id, value, onChange, min, max, step = 1, prefix, placeho
           placeholder={placeholder}
           className={`h-14 w-full rounded-2xl border border-line bg-paper text-[24px] font-semibold tracking-[-0.02em] text-ink tnum outline-none transition-[border-color,box-shadow] placeholder:font-normal placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent/15 ${
             prefix ? "pl-14" : "pl-5"
-          } pr-4`}
+          } ${suffix ? "pr-20" : "pr-4"}`}
           value={draft ?? (value === null ? "" : group(value))}
           onFocus={(e) => {
             const el = e.currentTarget;
@@ -107,6 +87,7 @@ function NumberAnswer({ id, value, onChange, min, max, step = 1, prefix, placeho
             onChange(digits === "" ? null : Math.min(max, Number(digits)));
           }}
         />
+        {suffix && <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[15px] text-muted">{suffix}</span>}
       </div>
       <button type="button" aria-label="More" className={btn} disabled={value !== null && value >= max} onClick={() => nudge(step)}>
         +
@@ -115,54 +96,14 @@ function NumberAnswer({ id, value, onChange, min, max, step = 1, prefix, placeho
   );
 }
 
-/**
- * Answer cards: a radio group that looks like big buttons. A tap or click on a card also moves on (`onPick`); arrow
- * keys only change the choice, so keyboard users can look through the options and press Next.
- */
-function Choice<T extends string | number>({ name, value, options, onChange, onPick, columns }: {
-  name: string;
-  value: T | null;
-  options: { value: T; title: string; body: string }[];
-  onChange: (v: T) => void;
-  onPick: () => void;
-  columns: string;
-}) {
-  return (
-    <div className={`grid gap-2.5 ${columns}`}>
-      {options.map((o, i) => (
-        <label
-          key={o.value}
-          // detail is 0 for a click made by the keyboard (Space on the radio)
-          onClick={(e) => e.detail > 0 && onPick()}
-          className="group relative flex cursor-pointer flex-col rounded-2xl border border-line bg-paper p-4 transition-colors hover:border-ink/25 has-checked:border-accent has-checked:bg-accent-soft has-focus-visible:ring-4 has-focus-visible:ring-accent/20"
-        >
-          <input
-            type="radio"
-            name={name}
-            value={String(o.value)}
-            checked={value === o.value}
-            onChange={() => onChange(o.value)}
-            className="sr-only"
-            {...(i === 0 ? { "data-autofocus": true } : {})}
-          />
-          <span className="flex items-center justify-between gap-2">
-            <span className="text-[17px] font-semibold tracking-[-0.015em] group-has-checked:text-accent-ink">{o.title}</span>
-            <span className="grid h-5 w-5 place-items-center rounded-full border border-line bg-paper text-transparent group-has-checked:border-accent group-has-checked:bg-accent group-has-checked:text-white">
-              <IconCheck size={12} />
-            </span>
-          </span>
-          <span className="mt-1 text-[13px] leading-snug text-muted">{o.body}</span>
-        </label>
-      ))}
-    </div>
-  );
-}
-
 function Tile({ label, value, sub, className = "" }: { label: string; value: string; sub: string; className?: string }) {
   return (
     <div className={`min-w-0 rounded-2xl border border-line bg-paper p-4 ${className}`}>
       <p className="text-[13px] text-muted">{label}</p>
-      <p className="mt-1 whitespace-nowrap text-[clamp(1.5rem,2.6vw,2rem)] font-semibold tracking-[-0.03em] text-accent-ink tnum">{value}</p>
+      {/* Amounts keep "AED" with the number (a no-break space) and only break, mid-number, if one can't fit at all */}
+      <p data-tile-value className="mt-1 text-[clamp(1.5rem,2.2vw,1.75rem)] font-semibold tracking-[-0.03em] text-accent-ink tnum wrap-anywhere">
+        {value}
+      </p>
       <p className="mt-0.5 text-[12.5px] leading-snug text-muted">{sub}</p>
     </div>
   );
@@ -173,9 +114,7 @@ export default function CapacityCheck() {
   const card = useRef<HTMLDivElement>(null);
   const uid = useId();
   const [a, setA] = useState<Answers>(EMPTY);
-  const [step, setStep] = useState(0); // 0 to 4: the questions; 5: the results
-  // What was typed in "Or your own figure", kept apart from the estimate so typing 100 isn't cleared on the way at 10
-  const [own, setOwn] = useState("");
+  const [step, setStep] = useState(0); // 0 to 2: the questions; 3: the results
 
   useGSAP(
     () => {
@@ -202,21 +141,14 @@ export default function CapacityCheck() {
   };
 
   const valid = [
-    a.people !== null && a.people >= 1,
-    a.clients !== null && a.clients >= 1,
-    a.fee !== null && a.fee >= 1,
-    a.size !== null,
-    a.estimate !== null && a.estimate >= 1,
+    a.accountants !== null && a.accountants >= LIMITS.accountants.min,
+    a.clients !== null && a.clients >= LIMITS.clients.min,
+    a.fee !== null && a.fee >= LIMITS.fee.min,
   ];
 
   const next = (e: FormEvent) => {
     e.preventDefault();
     if (step < QUESTIONS && valid[step]) go(step + 1);
-  };
-  /** After a card is tapped: a moment to see it selected, then on */
-  const pick = () => {
-    const from = step;
-    window.setTimeout(() => go(from + 1), 260);
   };
 
   const id = (k: string) => `${uid}-${k}`;
@@ -226,7 +158,8 @@ export default function CapacityCheck() {
     <section ref={root} id="capacity" aria-labelledby="capacity-title" className="relative -mt-16 pt-16">
       <div className="container-x">
         <SectionHeading id="capacity-title" eyebrow="Your firm in numbers" title="How many more clients can your team take?">
-          Five quick questions about your firm. See how many more clients your team could take, and get the answer as a PDF report.
+          Three quick questions about your firm. See how many clients your team could handle with <Brand />, what that adds in fees, and
+          get the answer as a PDF report.
         </SectionHeading>
 
         <div ref={card} data-reveal className="card mx-auto mt-12 max-w-[880px] overflow-clip sm:mt-14">
@@ -246,80 +179,18 @@ export default function CapacityCheck() {
             <form onSubmit={next} className="p-5 sm:p-8" noValidate>
               <div key={step} className="step-in">
                 {step === 0 && (
-                  <Question n={1} htmlFor={id("people")} title="How many people in your firm do client work?" help="Everyone who prepares or reviews clients' books, including you.">
-                    <NumberAnswer id={id("people")} value={a.people} onChange={set("people")} min={1} max={500} placeholder="6" />
+                  <Question n={1} htmlFor={id("accountants")} title="How many accountants does your firm have?" help="Everyone who prepares or reviews clients' books, including you.">
+                    <NumberAnswer id={id("accountants")} value={a.accountants} onChange={set("accountants")} {...LIMITS.accountants} placeholder="6" />
                   </Question>
                 )}
                 {step === 1 && (
-                  <Question n={2} htmlFor={id("clients")} title="How many clients do you look after?" help="Clients whose books your team keeps every month.">
-                    <NumberAnswer id={id("clients")} value={a.clients} onChange={set("clients")} min={1} max={5_000} placeholder="28" />
+                  <Question n={2} htmlFor={id("clients")} title="How many clients does your firm have?" help="Clients whose books your team keeps every month.">
+                    <NumberAnswer id={id("clients")} value={a.clients} onChange={set("clients")} {...LIMITS.clients} placeholder="28" />
                   </Question>
                 )}
                 {step === 2 && (
-                  <Question n={3} htmlFor={id("fee")} title="What does a client pay you a month, on average?" help="Your monthly fee per client, roughly. It's what an extra client would bring in.">
-                    <NumberAnswer id={id("fee")} value={a.fee} onChange={set("fee")} min={1} max={9_999_999} step={500} prefix="AED" placeholder="4,500" />
-                  </Question>
-                )}
-                {step === 3 && (
-                  <Question n={4} title="What does a typical client's month look like?" help="Pick the closest. It sets how long their routine work takes.">
-                    <Choice
-                      name={id("size")}
-                      value={a.size}
-                      onChange={set("size")}
-                      onPick={pick}
-                      columns="sm:grid-cols-3"
-                      options={(Object.keys(CLIENT_SIZES) as ClientSize[]).map((s) => ({
-                        value: s,
-                        title: CLIENT_SIZES[s].label,
-                        body: `About ${group(transactions(s))} invoices, bills and bank lines a month. VAT every ${CLIENT_SIZES[s].vatReturnsPerYear === 12 ? "month" : "quarter"}.`,
-                      }))}
-                    />
-                  </Question>
-                )}
-                {step === 4 && (
-                  <Question
-                    n={5}
-                    title="How much routine time do you think you'd save?"
-                    help={
-                      <>
-                        Imagine invoices, bills and bank lines arriving already recorded and matched, so your team only checks them. Your estimate,
-                        not ours: <Brand /> hasn&apos;t measured it yet.
-                      </>
-                    }
-                  >
-                    <Choice
-                      name={id("estimate")}
-                      value={own ? null : a.estimate}
-                      onChange={(v) => {
-                        setOwn("");
-                        set("estimate")(v);
-                      }}
-                      onPick={pick}
-                      columns="grid-cols-1 sm:grid-cols-3"
-                      options={GUESSES.map((g) => ({ value: g.value, title: `${g.value}%`, body: g.label }))}
-                    />
-                    <div className="mt-4 flex items-center gap-3">
-                      <label htmlFor={id("own")} className="text-[14px] text-muted">
-                        Or your own figure
-                      </label>
-                      <div className="relative w-24">
-                        <input
-                          id={id("own")}
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="off"
-                          className="h-11 w-full rounded-xl border border-line bg-paper pl-3.5 pr-8 text-[16px] text-ink tnum outline-none focus:border-accent focus:ring-4 focus:ring-accent/15"
-                          value={own}
-                          onChange={(e) => {
-                            const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
-                            const n = digits === "" ? null : Math.min(100, Number(digits));
-                            setOwn(n === null ? "" : String(n));
-                            set("estimate")(n);
-                          }}
-                        />
-                        <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-[14px] text-muted">%</span>
-                      </div>
-                    </div>
+                  <Question n={3} htmlFor={id("fee")} title="What does each client pay you a month, on average?" help="Your monthly fee per client, roughly. It's what each extra client would bring in.">
+                    <NumberAnswer id={id("fee")} value={a.fee} onChange={set("fee")} {...LIMITS.fee} step={500} prefix="AED" placeholder="4,500" />
                   </Question>
                 )}
               </div>
@@ -338,7 +209,10 @@ export default function CapacityCheck() {
               </div>
             </form>
           ) : done(a) ? (
-            <Results firm={{ people: a.people, clients: a.clients, fee: a.fee, size: a.size }} estimate={a.estimate} onChange={() => go(0)} />
+            <Results
+              firm={{ accountants: a.accountants, clients: a.clients, fee: a.fee }}
+              onChange={() => go(0)}
+            />
           ) : null}
         </div>
       </div>
@@ -348,16 +222,40 @@ export default function CapacityCheck() {
 
 type PdfState = { status: "idle" } | { status: "working" } | { status: "done"; url: string } | { status: "error"; email?: string; form?: string };
 
-function Results({ firm, estimate, onChange }: { firm: Firm; estimate: number; onChange: () => void }) {
+/** One line of the sums: what it is, the sum, and its result. On phones the sum goes under the other two. */
+function Step({ label, sum, result, accent = false }: { label: ReactNode; sum: string; result: string; accent?: boolean }) {
+  const tone = accent ? "text-accent-ink" : "text-ink";
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 py-2.5 sm:grid-cols-[11rem_minmax(0,1fr)_auto]">
+      <dt className={`text-[14px] font-medium ${tone}`}>{label}</dt>
+      <dd className="col-span-2 row-start-2 text-[13px] text-muted tnum sm:col-span-1 sm:col-start-2 sm:row-start-1">{sum}</dd>
+      <dd className={`col-start-2 row-start-1 text-right text-[15px] font-semibold tnum sm:col-start-3 ${tone}`}>{result}</dd>
+    </div>
+  );
+}
+
+/** A label with the product's name drawn by the Brand component */
+function withBrand(label: string): ReactNode {
+  const [before, after] = label.split("oneth");
+  return after === undefined ? (
+    label
+  ) : (
+    <>
+      {before}
+      <Brand />
+      {after}
+    </>
+  );
+}
+
+function Results({ firm, onChange }: { firm: Firm; onChange: () => void }) {
   const uid = useId();
-  const now = today(firm);
-  const after = withFreedTime(firm, estimate);
+  const c = capacity(firm);
+  const w = workings(firm);
   const [email, setEmail] = useState("");
   const [firmName, setFirmName] = useState("");
   const [pdf, setPdf] = useState<PdfState>({ status: "idle" });
 
-  const scale = Math.max(now.available, now.used);
-  const pct = (m: number) => `${(m * 100) / scale}%`;
   const aed = (n: number) => `AED${NBSP}${group(n)}`;
 
   const download = (url: string) => {
@@ -377,7 +275,7 @@ function Results({ firm, estimate, onChange }: { firm: Firm; estimate: number; o
       const res = await fetch("/api/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "report", email, firmName, ...firm, estimate, website: honeypot }),
+        body: JSON.stringify({ type: "report", email, firmName, ...firm, website: honeypot }),
       });
       const body = (await res.json().catch(() => null)) as SubmitResponse | null;
       if (res.status === 422 && body && !body.ok) return setPdf({ status: "error", email: body.errors?.email, form: body.errors?.form });
@@ -387,7 +285,7 @@ function Results({ firm, estimate, onChange }: { firm: Firm; estimate: number; o
     }
     try {
       const { capacityReportPdf } = await import("@/lib/capacity-pdf");
-      const bytes = await capacityReportPdf(firm, estimate, { email: email.trim(), firmName: firmName.trim() });
+      const bytes = await capacityReportPdf(firm, { email: email.trim(), firmName: firmName.trim() });
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
       download(url);
       setPdf({ status: "done", url });
@@ -411,43 +309,23 @@ function Results({ firm, estimate, onChange }: { firm: Firm; estimate: number; o
         </div>
         {/* Focused on arrival, so a screen reader starts with the answer */}
         <p data-autofocus tabIndex={-1} className="mt-3 text-pretty text-[clamp(1.35rem,2.4vw,1.85rem)] font-semibold leading-[1.2] tracking-[-0.025em] outline-none">
-          {headline(firm, estimate)}
+          {headline(firm)}
         </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          <Tile label="Hours freed a month" value={`${group(hours(after.freed))} h`} sub={`The team would be ${after.fullPercent}% full`} />
-          <Tile label="More clients you could take" value={group(after.extraClients)} sub={now.room > 0 ? "On top of today's room" : "Like your typical client"} />
-          <Tile label="Extra profit a month" value={aed(after.extraFees)} sub={`${aed(after.extraFees * 12)} a year, same team`} className="col-span-2 sm:col-span-1" />
+        {/* Side by side only from 1024px: narrower, a seven-figure amount doesn't fit a third of the card */}
+        <div className="mt-6 grid gap-2.5 lg:grid-cols-3">
+          <Tile label="Clients your team could handle" value={group(c.clientsAfter)} sub={`${group(c.clients)} today`} />
+          <Tile label="Fees a month at that size" value={aed(c.revenueAfter)} sub={`${aed(c.revenue)} today`} />
+          <Tile label="More revenue a year" value={aed(c.moreRevenue * 12)} sub={`${aed(c.moreRevenue)} a month, same team`} />
         </div>
 
-        {/* Today */}
-        <div className="mt-6 rounded-2xl bg-canvas p-4 sm:p-5">
-          <p className={`text-[14.5px] font-medium ${now.fullPercent > COMFORTABLY_FULL ? "text-warn" : "text-ink"}`}>{todayLine(firm)}</p>
-          <div className="relative mt-4">
-            <div className="flex h-3 overflow-hidden rounded-full bg-line">
-              <span className="h-full bg-accent" style={{ width: pct(now.routine) }} />
-              <span className="h-full bg-ink/75" style={{ width: pct(now.other) }} />
-            </div>
-            <span aria-hidden className="absolute -bottom-1.5 -top-1.5 w-0.5 -translate-x-1/2 rounded-full bg-ink" style={{ left: pct((now.available * COMFORTABLY_FULL) / 100) }} />
-          </div>
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px]">
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />
-              <span className="text-muted">Routine keying and matching</span> <span className="font-medium tnum">{group(hours(now.routine))} h</span>
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="h-2 w-2 rounded-full bg-ink/75" />
-              <span className="text-muted">VAT, review and clients</span> <span className="font-medium tnum">{group(hours(now.other))} h</span>
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="h-2 w-2 rounded-full bg-line ring-1 ring-inset ring-ink/10" />
-              <span className="text-muted">Free</span> <span className="font-medium tnum">{group(hours(Math.max(0, now.available - now.used)))} h</span>
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="mx-0.5 h-2.5 w-0.5 rounded-full bg-ink" />
-              <span className="text-muted">Comfortably full</span> <span className="font-medium tnum">{COMFORTABLY_FULL}%</span>
-            </li>
-          </ul>
+        {/* The sums, in the whiteboard's order: team hours, hours per client, the same with oneth, clients */}
+        <div className="mt-6 rounded-2xl bg-canvas px-4 py-2 sm:px-5">
+          <dl className="divide-y divide-line">
+            {w.map((r) => (
+              <Step key={r.label} label={withBrand(r.label)} sum={r.sum} result={r.result} accent={r.oneth} />
+            ))}
+          </dl>
         </div>
       </div>
 
@@ -542,9 +420,11 @@ function Results({ firm, estimate, onChange }: { firm: Firm; estimate: number; o
       </div>
 
       <p className="border-t border-line px-5 py-4 text-[12px] leading-relaxed text-faint sm:px-8">
-        Worked out from {MINUTES_PER_SALES_INVOICE} minutes per sales invoice, {MINUTES_PER_PURCHASE_BILL} per purchase bill, {MINUTES_PER_BANK_LINE} per bank line and{" "}
-        {HOURS_PER_VAT_RETURN} hours per VAT return, plus review and client time by size, against {CLIENT_HOURS_PER_PERSON} hours of client work per person a month.
-        Extra profit is the new clients&apos; fees with the same team, before software costs.
+        Worked out from your three answers and two figures of ours. Each accountant works {HOURS_PER_WEEK} hours a week, a typical UAE office week: over 52
+        weeks and 12 months, {hours(HOURS_PER_WEEK * 260)} hours a month each. Your team is busy with the clients it has, so each client takes your team&apos;s
+        hours divided by your clients. {ONETH_ESTIMATE}% is our estimate of the time <Brand /> takes off a client&apos;s month: invoices, bills and bank lines
+        arrive read and matched, and your team checks them. It hasn&apos;t been measured yet. Only whole clients count, each paying your average fee; more
+        revenue is the extra clients&apos; fees with the same team, before software costs.
       </p>
     </div>
   );

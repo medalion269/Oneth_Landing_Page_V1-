@@ -3,23 +3,7 @@
  * Every figure comes from lib/capacity.ts, the same arithmetic as the screen. Standard Helvetica only: no font files.
  */
 import type { PDFFont, PDFPage, RGB } from "pdf-lib";
-import {
-  CLIENT_HOURS_PER_PERSON,
-  CLIENT_SIZES,
-  COMFORTABLY_FULL,
-  HOURS_PER_VAT_RETURN,
-  MINUTES_PER_BANK_LINE,
-  MINUTES_PER_PURCHASE_BILL,
-  MINUTES_PER_SALES_INVOICE,
-  group,
-  headline,
-  hours,
-  today,
-  todayLine,
-  transactions,
-  withFreedTime,
-  type Firm,
-} from "./capacity";
+import { HOURS_PER_WEEK, ONETH_ESTIMATE, capacity, group, headline, hours, workings, type Firm } from "./capacity";
 
 /** The logo's paths (components/Brand.tsx, viewBox 525 195 950 290). The "o" is drawn as two ellipses on white. */
 const LOGO_N = "M783 465V262h60v31c19-25 47-38 79-38c46 0 76 30 76 81v129h-60V347c0-27-16-41-40-41c-32 0-55 21-55 51v108Z";
@@ -31,7 +15,7 @@ const LOGO_SQUARE = "M1427 271H1458A7 7 0 0 1 1465 278V308A7 7 0 0 1 1458 315H14
 const A4 = { w: 595.28, h: 841.89 };
 const M = 48; // margin
 
-export async function capacityReportPdf(firm: Firm, estimate: number, who: { email: string; firmName: string }): Promise<Uint8Array> {
+export async function capacityReportPdf(firm: Firm, who: { email: string; firmName: string }): Promise<Uint8Array> {
   const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
   const hex = (h: string) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
   // The landing's tokens (app/globals.css)
@@ -44,9 +28,7 @@ export async function capacityReportPdf(firm: Firm, estimate: number, who: { ema
     accentSoft: hex("#e6ecff"),
     line: hex("#e8e7e4"),
     canvas: hex("#f8f7f4"),
-    warn: hex("#b45309"),
     white: rgb(1, 1, 1),
-    other: hex("#525256"),
   };
 
   const doc = await PDFDocument.create();
@@ -57,8 +39,8 @@ export async function capacityReportPdf(firm: Firm, estimate: number, who: { ema
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  const now = today(firm);
-  const after = withFreedTime(firm, estimate);
+  const c = capacity(firm);
+  const w = workings(firm);
   const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const aed = (n: number) => `AED ${group(n)}`;
   const width = A4.w - 2 * M;
@@ -100,7 +82,7 @@ export async function capacityReportPdf(firm: Firm, estimate: number, who: { ema
 
   // The answer
   y -= 18;
-  const answer = headline(firm, estimate);
+  const answer = headline(firm);
   const answerLines = wrap(answer, bold, 14, width - 36);
   const answerH = answerLines.length * 19 + 32;
   box(M, y, width, answerH, { fill: C.accentSoft });
@@ -108,9 +90,9 @@ export async function capacityReportPdf(firm: Firm, estimate: number, who: { ema
   y -= answerH + 12;
 
   const tiles = [
-    { label: "Hours freed a month", value: `${group(hours(after.freed))} h`, sub: `The team would be ${after.fullPercent}% full` },
-    { label: "More clients you could take", value: group(after.extraClients), sub: now.room > 0 ? "On top of today's room" : "Like your typical client" },
-    { label: "Extra profit a month", value: aed(after.extraFees), sub: `${aed(after.extraFees * 12)} a year, same team` },
+    { label: "Clients your team could handle", value: group(c.clientsAfter), sub: `${group(c.clients)} today` },
+    { label: "Fees a month at that size", value: aed(c.revenueAfter), sub: `${aed(c.revenue)} today` },
+    { label: "More revenue a year", value: aed(c.moreRevenue * 12), sub: `${aed(c.moreRevenue)} a month, same team` },
   ];
   const gap = 10;
   const tw = (width - 2 * gap) / 3;
@@ -118,53 +100,34 @@ export async function capacityReportPdf(firm: Firm, estimate: number, who: { ema
     const x = M + i * (tw + gap);
     box(x, y, tw, 68, { border: C.line });
     text(t.label, x + 12, y - 12, { size: 8.5, color: C.muted, maxWidth: tw - 24 });
-    text(t.value, x + 12, y - 28, { font: bold, size: 18, color: C.accentInk, maxWidth: tw - 24 });
+    // One line always: a long amount gets a smaller size rather than wrapping onto the line below
+    const valueSize = Math.min(18, (18 * (tw - 24)) / bold.widthOfTextAtSize(t.value, 18));
+    text(t.value, x + 12, y - 28 - (18 - valueSize) / 2, { font: bold, size: valueSize, color: C.accentInk, maxWidth: Infinity });
     text(t.sub, x + 12, y - 50, { size: 8, color: C.muted, maxWidth: tw - 24 });
   });
   y -= 68 + 24;
 
-  // Today
-  y = text("Your team today", M, y, { font: bold, size: 12 });
-  y = text(todayLine(firm), M, y - 2, { size: 10, color: now.fullPercent > COMFORTABLY_FULL ? C.warn : C.ink });
-  y -= 8;
-  const scale = Math.max(now.available, now.used);
-  const barH = 10;
-  box(M, y, width, barH, { fill: C.line });
-  const routineW = (width * now.routine) / scale;
-  const otherW = (width * now.other) / scale;
-  box(M, y, routineW, barH, { fill: C.accent });
-  box(M + routineW, y, otherW, barH, { fill: C.other });
-  const tickX = M + (width * now.available * COMFORTABLY_FULL) / 100 / scale;
-  page.drawRectangle({ x: tickX - 0.75, y: y - barH - 4, width: 1.5, height: barH + 8, color: C.ink });
-  y -= barH + 14;
-  const legend = [
-    { color: C.accent, label: "Routine keying and matching", value: `${group(hours(now.routine))} h` },
-    { color: C.other, label: "VAT, review and clients", value: `${group(hours(now.other))} h` },
-    { color: C.line, label: "Free", value: `${group(hours(Math.max(0, now.available - now.used)))} h` },
-    { color: C.ink, label: `Comfortably full`, value: `${COMFORTABLY_FULL}%`, tick: true },
-  ];
-  let lx = M;
-  legend.forEach((l) => {
-    if (l.tick) page.drawRectangle({ x: lx + 2.5, y: y - 9, width: 1.5, height: 9, color: l.color });
-    else page.drawCircle({ x: lx + 3.5, y: y - 4.5, size: 3.5, color: l.color });
-    text(l.label, lx + 11, y, { size: 8.5, color: C.muted });
-    // the label's width plus a space before the value
-    const labelW = regular.widthOfTextAtSize(`${l.label} `, 8.5);
-    text(l.value, lx + 15 + labelW, y, { font: bold, size: 8.5 });
-    lx += 15 + labelW + bold.widthOfTextAtSize(l.value, 8.5) + 16;
+  // How it adds up: team hours, hours per client, the same with oneth, clients
+  y = text("How it adds up", M, y, { font: bold, size: 12 });
+  y -= 2;
+  w.forEach((r) => {
+    page.drawLine({ start: { x: M, y }, end: { x: M + width, y }, thickness: 0.5, color: C.line });
+    const color = r.oneth ? C.accentInk : C.ink;
+    text(r.label, M, y - 7, { font: bold, size: 10, color });
+    text(r.sum, M + 140, y - 7, { size: 10, color: C.muted, maxWidth: width - 260 });
+    text(r.result, M + width, y - 7, { font: bold, size: 10, color, align: "right" });
+    y -= 26;
   });
-  y -= 26;
+  page.drawLine({ start: { x: M, y }, end: { x: M + width, y }, thickness: 0.5, color: C.line });
+  y -= 22;
 
   // Their answers
   y = text("Your answers", M, y, { font: bold, size: 12 });
   y -= 2;
-  const size = CLIENT_SIZES[firm.size];
   const rows: [string, string][] = [
-    ["People on client work", group(firm.people)],
+    ["Accountants", group(firm.accountants)],
     ["Clients", group(firm.clients)],
     ["Average fee a month", aed(firm.fee)],
-    ["A typical client", `${size.label}: about ${group(transactions(firm.size))} invoices, bills and bank lines a month, VAT ${size.vatReturnsPerYear === 12 ? "every month" : "every quarter"}`],
-    ["Your estimate of routine time saved", `${estimate}%`],
   ];
   rows.forEach(([label, value]) => {
     page.drawLine({ start: { x: M, y }, end: { x: M + width, y }, thickness: 0.5, color: C.line });
@@ -177,11 +140,11 @@ export async function capacityReportPdf(firm: Firm, estimate: number, who: { ema
   // How it is worked out
   y = text("How this is worked out", M, y, { font: bold, size: 12 });
   y = text(
-    `Routine work is recording sales invoices (${MINUTES_PER_SALES_INVOICE} minutes each), purchase bills (${MINUTES_PER_PURCHASE_BILL} minutes) and bank lines (${MINUTES_PER_BANK_LINE} minute). ` +
-      `Each client also takes ${HOURS_PER_VAT_RETURN} hours per VAT return, plus ${size.otherHours} hours a month for review, questions and reporting at this size. ` +
-      `Each person has ${CLIENT_HOURS_PER_PERSON} hours of client work a month, and a team is comfortably full at ${COMFORTABLY_FULL}%. ` +
-      `New clients are like your typical client and pay your average fee; the team stays the same, so their fees are extra profit, before software costs. ` +
-      `The time saving is your estimate, not a measured figure.`,
+    `From your three answers and two figures of ours. Each accountant works ${HOURS_PER_WEEK} hours a week, a typical UAE office week; ` +
+      `times 52 weeks, divided by 12 months, that is ${hours(HOURS_PER_WEEK * 260)} hours a month each. Your team is busy with the clients it has, ` +
+      `so each client takes your team's hours divided by your clients. With oneth, each client takes about ${ONETH_ESTIMATE}% less time, so the same hours handle more clients; ` +
+      `only whole clients count, each paying your average fee. More revenue is the extra clients' fees with the same team, before software costs. ` +
+      `${ONETH_ESTIMATE}% is our estimate of the time oneth takes off a client's month: invoices, bills and bank lines arrive read and matched, and your team checks them. It has not been measured yet.`,
     M,
     y - 2,
     { size: 8.5, color: C.muted, leading: 12.5 },

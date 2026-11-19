@@ -2,13 +2,12 @@
  * The email the firm receives when someone downloads the calculator's report (app/api/apply/route.ts). Plain text;
  * the results are worked out again here from the answers, so figures from the browser are never trusted.
  */
-import { CLIENT_SIZES, group, hours, today, transactions, withFreedTime } from "./capacity";
+import { HOURS_PER_WEEK, ONETH_ESTIMATE, capacity, group, hours } from "./capacity";
 import type { ReportSubmission } from "./validation";
 
 export function reportEmail(data: ReportSubmission, when: string) {
-  const firm = { people: data.people, clients: data.clients, fee: data.fee, size: data.size };
-  const now = today(firm);
-  const after = withFreedTime(firm, data.estimate);
+  const firm = { accountants: data.accountants, clients: data.clients, fee: data.fee };
+  const c = capacity(firm);
   const aed = (n: number) => `AED ${group(n)}`;
   const lines = [
     "Someone downloaded the capacity report from oneth.ai",
@@ -18,17 +17,16 @@ export function reportEmail(data: ReportSubmission, when: string) {
     `Submitted: ${when} (UAE time)`,
     "",
     "Their answers",
-    `  People on client work:  ${data.people}`,
-    `  Clients:                ${data.clients}`,
-    `  Average fee a month:    ${aed(data.fee)}`,
-    `  A typical client:       ${CLIENT_SIZES[data.size].label} (about ${group(transactions(data.size))} invoices, bills and bank lines a month)`,
-    `  Their estimate:         ${data.estimate}% of routine time saved`,
+    `  Accountants:                 ${data.accountants}`,
+    `  Clients:                     ${data.clients}`,
+    `  Average fee a month:         ${aed(data.fee)}`,
     "",
-    "Their results",
-    `  Team today:             ${now.fullPercent}% of client hours taken, room for ${now.room} more clients`,
-    `  Hours freed a month:    ${group(hours(after.freed))}`,
-    `  More clients:           ${after.extraClients}`,
-    `  Extra profit a month:   ${aed(after.extraFees)} (${aed(after.extraFees * 12)} a year)`,
+    `Their results (with our figures: ${HOURS_PER_WEEK} h a week each, oneth taking about ${ONETH_ESTIMATE}% off each client's time)`,
+    `  Team hours a month:          ${hours(c.team)}`,
+    `  Hours a client:              ${hours(c.perClient)} today, ${hours(c.perClientAfter)} with oneth`,
+    `  Clients:                     ${group(c.clients)} today, ${group(c.clientsAfter)} with oneth (${group(c.more)} more)`,
+    `  Fees a month:                ${aed(c.revenue)} today, ${aed(c.revenueAfter)} with oneth`,
+    `  More revenue:                ${aed(c.moreRevenue)} a month (${aed(c.moreRevenue * 12)} a year)`,
     "",
     "Reply to this email to answer them directly.",
   ];
