@@ -347,6 +347,12 @@
   }
 }
 
+/* The guide's invite stays until it is answered, but steps out of sight while the app can't be clicked (tilted above
+   its flat pose on the way back up), so its Start button is never shown dead. */
+[data-hero-dash][inert] .guide-invite {
+  visibility: hidden;
+}
+
 /* While the hero's app fills the screen, the landing's top bar steps aside (it would cover the app's top bar). */
 [data-site-nav] {
   transition: opacity 0.25s ease;

@@ -181,13 +181,11 @@ export function useGuide({ story }: { story: Story }) {
     onReady: () => {
       if (latest.current.status === "idle" && !latest.current.reduced) setStatus("invited");
     },
-    // Scrolled away without answering: the invite goes and doesn't come back (the pill stays)
-    onLive: (live) => {
-      if (!live && latest.current.status === "invited") setStatus("idle");
-    },
+    // The invite stays until Start or No thanks: scrolling away and back, or a resize, leaves it where it was.
+    // Only reduced motion (turned on mid-visit) takes it away, as it is never shown with reduced motion.
     onCancel: () => {
       if (latest.current.status === "running") stop();
-      else if (latest.current.status === "invited") setStatus("idle");
+      else if (latest.current.status === "invited" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) setStatus("idle");
     },
   });
 
@@ -415,7 +413,10 @@ export function GuideOverlay({ guide, frameRef }: { guide: Guide; frameRef: RefO
   );
 }
 
-/** The invitation, when the app first fills the screen. Not modal: the app stays usable and the page scrolls. */
+/**
+ * The invitation, when the app first fills the screen. Not modal: the app stays usable and the page scrolls. It stays
+ * until the visitor answers (Start or No thanks), however far they scroll away and back.
+ */
 export function GuideInvite({ guide }: { guide: Guide }) {
   if (guide.status !== "invited") return null;
   return (
