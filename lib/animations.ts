@@ -398,8 +398,10 @@ export function documentWorkflowAnimation(root: HTMLElement) {
     const stage = $(scene, "[data-stage]");
     if (!stage) return;
 
-    // "Scan to ledger": the section holds while a scan line reads the invoice top to
-    // bottom. Each field it reaches lifts off as a chip and drops into its ledger slot.
+    // "Scan to ledger": the scene holds while a scan line reads the invoice top to bottom. Each field it reaches lifts
+    // off as a chip and drops into its ledger slot. Only the scene pins, not the section: the heading scrolls past
+    // first, so the invoice and ledger get the whole screen (on an iPhone in Safari, about 660px tall, they were drawn
+    // at 58% when the heading had to share it).
     const doc = $(stage, "[data-scan-doc]");
     const line = $(stage, "[data-scan-line]");
     const count = $(stage, "[data-scan-count]");
@@ -407,7 +409,7 @@ export function documentWorkflowAnimation(root: HTMLElement) {
 
     const tl = gsap.timeline({
       defaults: { ease: "none" },
-      scrollTrigger: { trigger: root, start: "top top", end: "+=200%", scrub: 0.7, pin: true, anticipatePin: 1, invalidateOnRefresh: true },
+      scrollTrigger: { trigger: scene, start: "top top", end: "+=200%", scrub: 0.7, pin: true, anticipatePin: 1, invalidateOnRefresh: true },
     });
 
     const SCAN_START = 0.8;

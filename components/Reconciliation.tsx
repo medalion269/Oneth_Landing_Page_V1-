@@ -325,7 +325,7 @@ export default function Reconciliation() {
   );
 
   return (
-    <section ref={root} id="reconciliation" aria-labelledby="recon-title" className="relative py-24 sm:py-28 lg:flex lg:h-svh lg:flex-col lg:pb-5 lg:pt-20">
+    <section ref={root} id="reconciliation" aria-labelledby="recon-title" className="relative py-24 sm:py-28 lg:flex lg:h-svh lg:flex-col lg:pb-5 lg:pt-20 motion-mobile:pt-6">
       <SectionHeading id="recon-title" eyebrow="Reconcile" title="Less matching. More reviewing." className="container-x" pinned>
         <Brand className="font-medium text-ink" /> matches bank lines with invoices and bills. Your accountants review what needs attention.
       </SectionHeading>

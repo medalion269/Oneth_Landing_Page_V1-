@@ -246,7 +246,7 @@ function Slot({ field, children, className = "" }: { field: string; children: Re
 function MobileScene() {
   const { width: W, height: H } = SCAN_CANVAS;
   return (
-    <div data-mobile className="container-x mt-10 flex max-w-xl flex-col lg:hidden motion-mobile:mt-4 motion-mobile:min-h-0 motion-mobile:flex-1">
+    <div data-mobile className="container-x mt-10 flex max-w-xl flex-col lg:hidden motion-mobile:mt-6 motion-mobile:h-svh motion-mobile:pb-[112px] motion-mobile:pt-4">
       <div className="relative mx-auto aspect-[340/452] w-full max-w-[420px] motion-mobile:aspect-auto motion-mobile:min-h-0 motion-mobile:flex-1">
         <Stage
           width={W}
@@ -397,7 +397,7 @@ export default function DocumentWorkflow() {
   );
 
   return (
-    <section ref={root} id="how-it-works" aria-labelledby="docs-title" className="relative py-24 sm:py-28 lg:flex lg:h-svh lg:flex-col lg:pb-5 lg:pt-20 motion-mobile:flex motion-mobile:h-svh motion-mobile:flex-col motion-mobile:pb-[112px] motion-mobile:pt-12">
+    <section ref={root} id="how-it-works" aria-labelledby="docs-title" className="relative py-24 sm:py-28 lg:flex lg:h-svh lg:flex-col lg:pb-5 lg:pt-20 motion-mobile:pb-0 motion-mobile:pt-12">
       <SectionHeading id="docs-title" eyebrow="Prepare" title="From paperwork to prepared books." className="container-x" pinned>
         <Brand className="font-medium text-ink" /> reads invoices, receipts and bank statements, then prepares the entries for your team.
       </SectionHeading>
