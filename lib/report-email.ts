@@ -10,7 +10,7 @@ export function reportEmail(data: ReportSubmission, when: string) {
   const c = capacity(firm);
   const aed = (n: number) => `AED ${group(n)}`;
   const lines = [
-    "Someone downloaded the capacity report from oneth.ai",
+    "Someone downloaded the value report from oneth.ai",
     "",
     `Email:     ${data.email}`,
     `Firm:      ${data.firmName || "(not given)"}`,

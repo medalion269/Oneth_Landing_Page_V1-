@@ -6,7 +6,7 @@
  * drawn as shapes.
  */
 import type { PDFFont, PDFPage, RGB } from "pdf-lib";
-import { HOURS_A_MONTH_EACH, HOURS_PER_WEEK, ONETH_ESTIMATE, STUDY, TASKS, capacity, group, headline, hours, workings, type Firm } from "./capacity";
+import { HOURS_A_MONTH_EACH, HOURS_PER_WEEK, NBSP, ONETH_ESTIMATE, STUDY, TASKS, capacity, group, headline, hours, workings, type Firm } from "./capacity";
 
 /** The logo's paths (components/Brand.tsx, viewBox 525 195 950 290). The "o" is drawn as two ellipses on white. */
 const LOGO_N = "M783 465V262h60v31c19-25 47-38 79-38c46 0 76 30 76 81v129h-60V347c0-27-16-41-40-41c-32 0-55 21-55 51v108Z";
@@ -46,7 +46,8 @@ export async function capacityReportPdf(firm: Firm, who: { email: string; firmNa
   const w = workings(firm);
   const gain = c.more > 0;
   const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  const aed = (n: number) => `AED ${group(n)}`;
+  // A no-break space keeps "AED" and its amount on one line
+  const aed = (n: number) => `AED${NBSP}${group(n)}`;
   const width = A4.w - 2 * M;
 
   type TextOptions = { font?: PDFFont; size?: number; color?: RGB; maxWidth?: number; leading?: number; align?: "left" | "right" };
@@ -166,17 +167,17 @@ export async function capacityReportPdf(firm: Firm, who: { email: string; firmNa
   text("oneth's part", keyX + 9, y, { size: 7.5, color: C.muted });
   y = text("oneth takes off", M + width, y, { size: 7.5, color: C.muted, align: "right" });
   y -= 2;
-  const rowH = 27;
+  const rowH = 29;
   TASKS.forEach((t) => {
     rule(y);
-    text(t.work, M, y - 7, { font: bold, size: 9.5 });
-    text(t.oneth, M, y - 18, { size: 8.5, color: C.muted, maxWidth: barX - M - 12 });
+    text(t.work, M, y - 6.5, { font: bold, size: 9.5 });
+    text(t.oneth, M, y - 17.5, { size: 8.5, color: C.muted, maxWidth: barX - M - 12 });
     const barY = y - rowH / 2 - 3.5;
     page.drawRectangle({ x: barX, y: barY, width: t.share * k, height: 7, color: C.line });
     if (t.cut > 0) page.drawRectangle({ x: barX, y: barY, width: (t.share * t.cut * k) / 100, height: 7, color: C.accent });
     text(`${t.share}%`, barX + t.share * k + 6, y - rowH / 2 + 4, { size: 8.5, color: C.muted, maxWidth: Infinity });
-    if (t.cut > 0) text(`${t.cut}% less`, M + width, y - 9, { font: bold, size: 9.5, color: C.accentInk, align: "right" });
-    else text("Your team", M + width, y - 9, { size: 9.5, color: C.muted, align: "right" });
+    if (t.cut > 0) text(`${t.cut}% less`, M + width, y - 10, { font: bold, size: 9.5, color: C.accentInk, align: "right" });
+    else text("Your team", M + width, y - 10, { size: 9.5, color: C.muted, align: "right" });
     y -= rowH;
   });
   rule(y, C.ink, 0.75);
