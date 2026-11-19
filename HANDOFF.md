@@ -88,6 +88,6 @@ The user asked for the page to show how the product really works, keeping the fl
 - Fixed on 2026-11-18: the pilot section's glow no longer starts with a hard top edge under the Outlook line, since removed (`PilotForm.tsx`, the gradient's centre moved from the top edge to 45%).
 - Dev server: something else on this machine uses port 3000, so run `npx next dev -p 3100`. `next dev` also writes `AGENTS.md`, which `.gitignore` ignores.
 - Live at https://oneth.ai (Vercel, from the `medalion269/Oneth_Landing_Page_V1-` repo; see L7 in `docs/DECISIONS.md`). Form delivery is the Resend email (L9), switched on by its variables in the Vercel project; without them the live form runs in development mode.
-- There's no Open Graph image or analytics yet.
+- There's no Open Graph image yet. Analytics: Microsoft Clarity loads when `NEXT_PUBLIC_CLARITY_PROJECT_ID` is set (Production only in Vercel, L27). There's no privacy notice on the page yet.
 
 Start by running the project, opening it at 390 and 1440 widths, and telling me what you see. Then wait for my next instruction.

@@ -83,6 +83,10 @@ alter table public.waitlist enable row level security;
 
 The form includes a hidden honeypot field. Before launch, also add rate limiting at the edge (for example Vercel Firewall or Cloudflare).
 
+## Analytics
+
+Microsoft Clarity (heatmaps and session recordings) loads from `components/Clarity.tsx` when `NEXT_PUBLIC_CLARITY_PROJECT_ID` is set. Take the ID from clarity.microsoft.com (Settings > Overview), add it in the Vercel project for **Production only**, so local runs and previews are never recorded, and redeploy: the value is read at build time. Without it, nothing loads.
+
 ## Project structure
 
 ```
