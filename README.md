@@ -105,7 +105,6 @@ components/
   DocumentWorkflow.tsx  Prepare: invoice -> the app's Document card and decision record
   Reconciliation.tsx    Reconcile: the app's Bank lines and Ledger items cards, Needs your review panel
   ApprovalWorkflow.tsx  Review: the app's Decision screen; its decision record writes itself in, a cursor approves
-  KnowledgeScene.tsx    Knowledge: a precedent is saved (Precedents tab), then the next bill cites it
   PortalScene.tsx       Client portal: the client answers and sends a photo; the firm's Communications tab updates
   app/ui.tsx            the app's building blocks (rail, top bar, cards, chips, rows, pills) for the mockups
   Features.tsx          six feature cards, supported tools, UAE data commitment

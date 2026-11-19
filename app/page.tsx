@@ -3,7 +3,6 @@ import Hero from "@/components/Hero";
 import DocumentWorkflow from "@/components/DocumentWorkflow";
 import Reconciliation from "@/components/Reconciliation";
 import ApprovalWorkflow from "@/components/ApprovalWorkflow";
-import KnowledgeScene from "@/components/KnowledgeScene";
 import PortalScene from "@/components/PortalScene";
 import Features from "@/components/Features";
 import CapacityCheck from "@/components/CapacityCheck";
@@ -27,7 +26,6 @@ export default function Home() {
         <DocumentWorkflow />
         <Reconciliation />
         <ApprovalWorkflow />
-        <KnowledgeScene />
         <PortalScene />
         <Features />
         <CapacityCheck />
