@@ -8,14 +8,15 @@ import { capacityAnimation, ScrollTrigger, useGSAP } from "@/lib/animations";
 import { onAnchorClick } from "@/lib/scroll";
 import { requestFormMode } from "@/lib/form-mode";
 import { validateEmail, type SubmitResponse } from "@/lib/validation";
-import { HOURS_PER_WEEK, LIMITS, NBSP, ONETH_ESTIMATE, capacity, group, headline, hours, workings, type Firm } from "@/lib/capacity";
+import { HOURS_A_MONTH_EACH, HOURS_PER_WEEK, LIMITS, NBSP, ONETH_ESTIMATE, STUDY, capacity, group, headline, workings, type Firm } from "@/lib/capacity";
 
 /*
  * The calculator, as a short form: three questions one at a time (accountants, clients, the average fee; L18), then
  * the answer, then the same answer as a PDF in exchange for an email. Everything else is ours and the page says so: a
  * typical UAE office week (HOURS_PER_WEEK) and oneth's labelled estimate of the time it takes off a client's month
- * (ONETH_ESTIMATE, L17). The results lay the sums out in the order the user drew them on a whiteboard (L16). The PDF is
- * made in the browser (lib/capacity-pdf.ts); the email and answers go to the firm through /api/apply.
+ * (ONETH_ESTIMATE, the sum of TASKS, L26). The results lay the sums out in the order the user drew them on a whiteboard
+ * (L16). The PDF is a value report, made in the browser (lib/capacity-pdf.ts); the email and answers go to the firm
+ * through /api/apply.
  */
 
 type Answers = { accountants: number | null; clients: number | null; fee: number | null };
@@ -261,7 +262,7 @@ function Results({ firm, onChange }: { firm: Firm; onChange: () => void }) {
   const download = (url: string) => {
     const link = document.createElement("a");
     link.href = url;
-    link.download = "oneth-capacity-report.pdf";
+    link.download = "oneth-value-report.pdf";
     link.click();
   };
 
@@ -344,7 +345,7 @@ function Results({ firm, onChange }: { firm: Firm; onChange: () => void }) {
               href={pdf.url}
               target="_blank"
               rel="noopener"
-              download="oneth-capacity-report.pdf"
+              download="oneth-value-report.pdf"
               className="text-[14px] font-medium text-accent-ink underline underline-offset-4"
             >
               Didn&apos;t download? Open the PDF
@@ -352,8 +353,11 @@ function Results({ firm, onChange }: { firm: Firm; onChange: () => void }) {
           </div>
         ) : (
           <form onSubmit={getPdf} noValidate>
-            <p className="text-[17px] font-semibold tracking-[-0.015em]">Get this as a PDF report</p>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted">Your answers, your results and how they&apos;re worked out, on one page to keep or share with your partners.</p>
+            <p className="text-[17px] font-semibold tracking-[-0.015em]">Get your value report as a PDF</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-muted">
+              What <Brand /> is worth to your firm, where the time comes back task by task, and how it adds up. One page to keep or share
+              with your partners.
+            </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]">
               <div>
                 <label htmlFor={`${uid}-email`} className="sr-only">
@@ -405,7 +409,8 @@ function Results({ firm, onChange }: { firm: Firm; onChange: () => void }) {
 
       <div className="flex flex-col gap-4 border-t border-line p-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <p className="text-[14px] leading-relaxed text-muted">
-          <span className="font-medium text-ink">Want the real figure?</span> A free pilot measures it on one of your clients, over one month.
+          <span className="font-medium text-ink">See it on your own clients.</span> A free one-month pilot shows what <Brand /> takes off your
+          team&apos;s month.
         </p>
         <a
           href="#pilot"
@@ -421,10 +426,11 @@ function Results({ firm, onChange }: { firm: Firm; onChange: () => void }) {
 
       <p className="border-t border-line px-5 py-4 text-[12px] leading-relaxed text-faint sm:px-8">
         Worked out from your three answers and two figures of ours. Each accountant works {HOURS_PER_WEEK} hours a week, a typical UAE office week: over 52
-        weeks and 12 months, {hours(HOURS_PER_WEEK * 260)} hours a month each. Your team is busy with the clients it has, so each client takes your team&apos;s
-        hours divided by your clients. {ONETH_ESTIMATE}% is our estimate of the time <Brand /> takes off a client&apos;s month: invoices, bills and bank lines
-        arrive read and matched, and your team checks them. It hasn&apos;t been measured yet. Only whole clients count, each paying your average fee; more
-        revenue is the extra clients&apos; fees with the same team, before software costs.
+        weeks and 12 months, {group(HOURS_A_MONTH_EACH)} hours a month each. Your team is busy with the clients it has, so each client takes your team&apos;s
+        hours divided by your clients. {ONETH_ESTIMATE}% is our estimate of the time <Brand /> takes off a client&apos;s month, task by task: invoices and bills
+        arrive read, VAT-checked and coded, bank lines matched, missing documents asked for in the client&apos;s portal and VAT figures prepared, while review
+        and advice stay with your team. The PDF shows each task. For comparison, a 2025 Stanford and MIT study found {STUDY.finding} among {STUDY.who}. Only
+        whole clients count, each paying your average fee; more revenue is the extra clients&apos; fees with the same team, before software costs.
       </p>
     </div>
   );
