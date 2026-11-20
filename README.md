@@ -91,8 +91,10 @@ Microsoft Clarity (heatmaps and session recordings) loads from `components/Clari
 
 ```
 app/
-  layout.tsx            fonts, metadata
+  layout.tsx            fonts, metadata, structured data (JSON-LD)
   page.tsx              section order
+  robots.ts, sitemap.ts robots.txt and sitemap.xml (canonical host: www.oneth.ai)
+  opengraph-image.png   the share picture for link previews (+ .alt.txt), made by scripts/og-image.mjs
   globals.css           design tokens, CSS entrance animations, hero starting pose
   api/apply/route.ts    submission endpoint
 components/
@@ -125,6 +127,7 @@ lib/
   capacity-pdf.ts       the calculator's one-page PDF report (pdf-lib, loaded only when asked)
   report-email.ts       the email the firm gets when someone downloads the report
   demo-data.ts          fictional companies; amounts and VAT derived in code
+  site.ts               the canonical address, search title, description and feature names (L29)
   validation.ts         shared client and server validation
 ```
 
