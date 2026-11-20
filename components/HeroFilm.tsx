@@ -5,10 +5,13 @@
  * shows, with its fictional data), captured screen by screen and zoomed so it reads at phone width. Made with
  * HyperFrames in landing/hero-film/ (kept local); the rendered file ships from public/.
  *
- * Only the poster is in the markup. The film is fetched below 1024px and only without reduced motion, so desktop never
- * downloads it and reduced-motion visitors keep the still. It plays while on screen and pauses when scrolled away.
- * Both conditions are watched, not read once: a tablet turned from landscape (desktop hero) to portrait, or a desktop
- * window narrowed, starts the film when this section appears; widening it again stops it (L19).
+ * The film's source is in the HTML with a media condition (below 1024px, motion allowed), so a phone starts loading it
+ * while the page itself loads and starts playing without waiting for the page's JavaScript: on a phone-speed CPU the
+ * poster used to stand still for about 2 seconds, because the film was only requested after hydration (L30). Desktop
+ * and reduced-motion visitors match no source, so they never download it and keep the still. Once the page runs, it
+ * plays while on screen and pauses when scrolled away, and both conditions are watched: a tablet turned from landscape
+ * (desktop hero) to portrait, or a desktop window narrowed, picks the source then and starts the film; widening it
+ * again stops it (L19).
  *
  * The film is 1080 × 1350, but every scene sits between y 110 and 1325 (only two passing transition frames reach
  * further), so the frame shows just that band: 1080 × 1215, 8:9. object-position puts 110 of the 135 cropped rows on
@@ -21,6 +24,8 @@ const SRC = "/hero-film.mp4";
 const POSTER = "/hero-film-poster.jpg";
 const PHONES = "(max-width: 1023.98px)";
 const REDUCED = "(prefers-reduced-motion: reduce)";
+/** When the browser may pick the film at all: the same two conditions, as one media query for <source media> */
+const FILM_MEDIA = `${PHONES} and (prefers-reduced-motion: no-preference)`;
 
 export default function HeroFilm() {
   const ref = useRef<HTMLVideoElement>(null);
@@ -36,7 +41,8 @@ export default function HeroFilm() {
       const on = phones.matches && !reduced.matches;
       if (on && !io) {
         video.muted = true; // set on the element too: iOS checks the property before it allows autoplay
-        if (!video.getAttribute("src")) video.src = SRC;
+        // Opened wide or with reduced motion, the browser picked no source; the condition matches now, so pick again
+        if (!video.currentSrc) video.load();
         io = new IntersectionObserver(
           ([entry]) => {
             if (entry.isIntersecting) video.play().catch(() => {});
@@ -66,13 +72,16 @@ export default function HeroFilm() {
     <video
       ref={ref}
       poster={POSTER}
+      autoPlay
       muted
       loop
       playsInline
-      preload="none"
+      preload="auto"
       disablePictureInPicture
       aria-label="A short silent film of the oneth desktop app with fictional data: oneth reads a supplier invoice and a person approves it, the next invoice arrives already proposed, a client answers a question from their phone, a payment is matched to its bill and the month's checklist clears."
       className="block aspect-[8/9] w-full object-cover object-[50%_81.5%]"
-    />
+    >
+      <source src={SRC} type="video/mp4" media={FILM_MEDIA} />
+    </video>
   );
 }
