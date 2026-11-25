@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: { card: "summary_large_image", title: SHARE_TITLE, description: DESCRIPTION },
+  // The name under the icon when the page is added to a home screen (iOS reads apple-mobile-web-app-title; the
+  // rest read app/manifest.ts). Without it iOS shows the whole search title. `capable: false`, or Next adds
+  // mobile-web-app-capable and the icon opens a bare window with no address bar; it's a website (L31).
+  applicationName: "oneth",
+  appleWebApp: { title: "oneth", capable: false },
 };
 
 export const viewport: Viewport = {

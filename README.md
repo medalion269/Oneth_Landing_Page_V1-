@@ -95,6 +95,9 @@ app/
   page.tsx              section order
   robots.ts, sitemap.ts robots.txt and sitemap.xml (canonical host: www.oneth.ai)
   opengraph-image.png   the share picture for link previews (+ .alt.txt), made by scripts/og-image.mjs
+  favicon.ico, icon.svg, apple-icon.png  the tab and home-screen icons (Next links them itself)
+  manifest.ts           the web app manifest: name and the public/icon-*.png icons, made by scripts/make-icons.mjs
+  not-found.tsx         the 404 page (status 404, noindex)
   globals.css           design tokens, CSS entrance animations, hero starting pose
   api/apply/route.ts    submission endpoint
 components/
