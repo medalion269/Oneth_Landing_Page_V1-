@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
-import Brand from "./Brand";
+import Brand, { Wordmark } from "./Brand";
+import { CalendlyModal } from "./CalendlyBooking";
 import { IconAlert, IconArrowRight, IconCheck, IconChevronDown } from "./icons";
 import { pilotAnimation, useGSAP } from "@/lib/animations";
 import { onFormModeRequest, type FormMode } from "@/lib/form-mode";
@@ -67,7 +68,10 @@ export default function PilotForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [message, setMessage] = useState("");
-  const [result, setResult] = useState<{ saved: boolean; email: string; mode: FormMode } | null>(null);
+  const [result, setResult] = useState<{ saved: boolean; email: string; name?: string; mode: FormMode } | null>(null);
+  // A pilot application opens the booking window straight away (prefilled); the success state can reopen it.
+  const [booking, setBooking] = useState(false);
+  const bookAgain = useRef<HTMLButtonElement>(null);
 
   useGSAP(
     () => {
@@ -118,9 +122,10 @@ export default function PilotForm() {
       });
       const data = (await res.json().catch(() => ({ ok: false }))) as SubmitResponse;
       if (data.ok) {
-        setResult({ saved: data.saved, email: check.data.email, mode });
+        setResult({ saved: data.saved, email: check.data.email, name: check.data.type === "pilot" ? check.data.fullName : undefined, mode });
         setStatus("success");
         formRef.current?.reset();
+        if (mode === "pilot") setBooking(true);
         return;
       }
       if (data.errors) setErrors(data.errors);
@@ -215,7 +220,7 @@ export default function PilotForm() {
                 </p>
                 <p className="mt-2 text-[15px] leading-relaxed text-muted">
                   {result.mode === "pilot" ? (
-                    <>Thank you. We will be in touch at {result.email} to plan your pilot.</>
+                    <>Thank you. Pick a time for a 20-minute call to plan your pilot, or we will be in touch at {result.email}.</>
                   ) : (
                     <>
                       Thank you. We will let you know at {result.email} when <Brand /> opens to more firms.
@@ -231,9 +236,16 @@ export default function PilotForm() {
                     </p>
                   </div>
                 )}
-                <button type="button" onClick={() => setStatus("idle")} className="btn btn-ghost mt-6">
-                  Submit another
-                </button>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  {result.mode === "pilot" && (
+                    <button ref={bookAgain} type="button" onClick={() => setBooking(true)} className="btn btn-accent">
+                      Book your pilot call <IconArrowRight size={16} />
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setStatus("idle")} className="btn btn-ghost">
+                    Submit another
+                  </button>
+                </div>
               </div>
             ) : (
               <form ref={formRef} noValidate onSubmit={onSubmit} className="space-y-4">
@@ -354,6 +366,16 @@ export default function PilotForm() {
           </div>
         </div>
       </div>
+      <CalendlyModal
+        open={booking}
+        onClose={() => {
+          setBooking(false);
+          // Opened by the submit button, which the success state replaced: send focus to the button that reopens it.
+          requestAnimationFrame(() => bookAgain.current?.focus({ preventScroll: true }));
+        }}
+        prefill={result?.mode === "pilot" ? { name: result.name, email: result.email } : undefined}
+        brand={<Wordmark />}
+      />
     </section>
   );
 }

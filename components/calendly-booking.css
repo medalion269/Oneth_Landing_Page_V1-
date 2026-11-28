@@ -1,0 +1,272 @@
+/* Calendly booking window (CalendlyBooking.tsx). Plain CSS, no framework needed. The --cb-* colours already match
+   the site's tokens in app/globals.css (canvas, paper, ink, muted, line, accent, accent-soft, accent-ink). */
+.cb-root {
+  --cb-paper: #ffffff;
+  --cb-ink: #18181b;
+  --cb-muted: #71717a;
+  --cb-line: #e8e7e4;
+  --cb-canvas: #f8f7f4;
+  --cb-accent: #033ffe;
+  --cb-accent-hover: #0236e0;
+  --cb-accent-soft: #e6ecff;
+  --cb-accent-ink: #0232d4;
+  --cb-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --cb-shadow: 0 1px 2px rgb(24 24 27 / 0.04), 0 12px 32px -8px rgb(24 24 27 / 0.1), 0 32px 64px -24px rgb(24 24 27 / 0.12);
+
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  color: var(--cb-ink);
+  line-height: 1.5;
+}
+.cb-root,
+.cb-root *,
+.cb-root *::before,
+.cb-root *::after {
+  box-sizing: border-box;
+}
+.cb-root p {
+  margin: 0;
+}
+
+.cb-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(24 24 27 / 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.cb-window {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100dvh - 12px);
+  overflow: hidden;
+  border-radius: 28px 28px 0 0;
+  background: var(--cb-paper);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: var(--cb-shadow);
+  outline: none;
+}
+
+.cb-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--cb-line);
+  padding: 0.75rem 0.5rem 0.75rem 1rem;
+}
+.cb-brand {
+  display: flex;
+  flex-shrink: 0;
+  height: 19px;
+}
+.cb-brand > * {
+  height: 100%;
+  width: auto;
+}
+.cb-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 2rem;
+  background: var(--cb-line);
+}
+.cb-heading {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+.cb-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.cb-desc {
+  margin-top: 2px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--cb-muted);
+}
+.cb-desc-wrap {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+.cb-only-wide {
+  display: none;
+}
+
+.cb-link {
+  font-weight: 500;
+  color: var(--cb-accent-ink);
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+.cb-link:hover {
+  text-decoration: underline;
+}
+
+.cb-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cb-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.cb-close:hover {
+  background: var(--cb-canvas);
+  color: var(--cb-ink);
+}
+
+.cb-scheduler {
+  position: relative;
+  min-height: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+  transition: height 0.3s cubic-bezier(0, 0, 0.2, 1);
+}
+.cb-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 1.5rem;
+  background: var(--cb-paper);
+  text-align: center;
+}
+.cb-status-title {
+  font-weight: 600;
+}
+.cb-status-text {
+  margin-top: 0.25rem !important;
+  font-size: 14px;
+  color: var(--cb-muted);
+}
+.cb-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cb-loading-text {
+  margin-top: 1rem !important;
+}
+.cb-slow-link {
+  margin-top: 0.75rem;
+  font-size: 14px;
+}
+.cb-spinner {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid var(--cb-accent-soft);
+  border-top-color: var(--cb-accent);
+  animation: cb-spin 0.8s linear infinite;
+}
+.cb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 1.25rem;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  background: var(--cb-accent);
+  color: #fff;
+  font-weight: 550;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgb(2 50 212 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  transition: background-color 0.2s ease, box-shadow 0.25s ease;
+}
+.cb-btn:hover {
+  background: var(--cb-accent-hover);
+  box-shadow: 0 10px 28px -10px rgb(3 63 254 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+@media (min-width: 640px) {
+  .cb-root {
+    align-items: center;
+    padding: 1.5rem;
+  }
+  .cb-window {
+    max-width: 680px;
+    max-height: min(840px, calc(100dvh - 48px));
+    border-radius: 24px;
+    padding-bottom: 0;
+  }
+  .cb-header {
+    gap: 1.25rem;
+    padding: 0.875rem 0.75rem 0.875rem 1.5rem;
+  }
+  .cb-brand {
+    height: 25px;
+  }
+  .cb-divider {
+    height: 2.25rem;
+  }
+  .cb-title {
+    font-size: 17px;
+  }
+  .cb-desc {
+    font-size: 13px;
+  }
+  .cb-only-phone {
+    display: none;
+  }
+  .cb-only-wide {
+    display: inline;
+  }
+}
+
+@keyframes cb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cb-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes cb-sheet {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+@keyframes cb-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cb-backdrop {
+    animation: cb-fade 0.25s ease both;
+  }
+  .cb-window {
+    animation: cb-sheet 0.45s var(--cb-ease) both;
+  }
+}
+@media (min-width: 640px) and (prefers-reduced-motion: no-preference) {
+  .cb-window {
+    animation: cb-rise 0.35s var(--cb-ease) both;
+  }
+}
